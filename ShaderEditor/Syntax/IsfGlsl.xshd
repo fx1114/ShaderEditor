@@ -1,0 +1,227 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SyntaxDefinition name="ISF_GLSL" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+
+  <Color name="Comment" foreground="#6A9955" fontStyle="italic" />
+  <Color name="IsfHeaderBorder" foreground="#4EC9B0" fontWeight="bold" />
+  <Color name="IsfJsonKey" foreground="#9CDCFE" fontWeight="bold" />
+  <Color name="String" foreground="#CE9178" />
+  <Color name="Number" foreground="#B5CEA8" />
+  <Color name="Preprocessor" foreground="#C586C0" />
+  <Color name="Keyword" foreground="#569CD6" fontWeight="bold" />
+  <Color name="GlslType" foreground="#4EC9B0" />
+  <Color name="GlslBuiltinFunc" foreground="#DCDCAA" />
+  <Color name="IsfBuiltinVar" foreground="#4FC1FF" fontWeight="bold" />
+
+  <RuleSet name="IsfJsonRuleSet">
+    <Span color="String">
+      <Begin>"</Begin>
+      <End>"</End>
+    </Span>
+    <Keywords color="IsfJsonKey">
+      <Word>DESCRIPTION</Word>
+      <Word>CREDIT</Word>
+      <Word>ISFVSN</Word>
+      <Word>CATEGORIES</Word>
+      <Word>INPUTS</Word>
+      <Word>PASSES</Word>
+      <Word>NAME</Word>
+      <Word>TYPE</Word>
+      <Word>LABEL</Word>
+      <Word>DEFAULT</Word>
+      <Word>MIN</Word>
+      <Word>MAX</Word>
+      <Word>VALUES</Word>
+      <Word>LABELS</Word>
+      <Word>TARGET</Word>
+      <Word>PERSISTENT</Word>
+      <Word>WIDTH</Word>
+      <Word>HEIGHT</Word>
+    </Keywords>
+    <Keywords color="Keyword">
+      <Word>true</Word>
+      <Word>false</Word>
+      <Word>null</Word>
+    </Keywords>
+    <Rule color="Number">\b0[xX][0-9a-fA-F]+|\b\d+(\.\d+)?([eE][+-]?\d+)?\b</Rule>
+  </RuleSet>
+
+  <RuleSet ignoreCase="false">
+
+    <!-- 1. ISF JSON Header Block /*{ ... }*/ -->
+    <Span color="IsfHeaderBorder" ruleSet="IsfJsonRuleSet" multiline="true">
+      <Begin>/\*\{</Begin>
+      <End>\}\*/</End>
+    </Span>
+
+    <!-- 2. Normale Kommentare -->
+    <Span color="Comment">
+      <Begin>//</Begin>
+    </Span>
+    <Span color="Comment" multiline="true">
+      <Begin>/\*</Begin>
+      <End>\*/</End>
+    </Span>
+
+    <!-- 3. Präprozessor-Direktiven ohne ^ und $ -->
+    <Rule color="Preprocessor">\#[^\r\n]*</Rule>
+
+    <!-- 4. Kontrollfluss & Qualifier -->
+    <Keywords color="Keyword">
+      <Word>if</Word>
+      <Word>else</Word>
+      <Word>for</Word>
+      <Word>while</Word>
+      <Word>do</Word>
+      <Word>switch</Word>
+      <Word>case</Word>
+      <Word>default</Word>
+      <Word>break</Word>
+      <Word>continue</Word>
+      <Word>return</Word>
+      <Word>discard</Word>
+      <Word>struct</Word>
+      <Word>const</Word>
+      <Word>uniform</Word>
+      <Word>in</Word>
+      <Word>out</Word>
+      <Word>inout</Word>
+      <Word>attribute</Word>
+      <Word>varying</Word>
+      <Word>layout</Word>
+      <Word>location</Word>
+      <Word>precision</Word>
+      <Word>highp</Word>
+      <Word>mediump</Word>
+      <Word>lowp</Word>
+      <Word>true</Word>
+      <Word>false</Word>
+    </Keywords>
+
+    <!-- 5. GLSL Datentypen -->
+    <Keywords color="GlslType">
+      <Word>void</Word>
+      <Word>bool</Word>
+      <Word>int</Word>
+      <Word>uint</Word>
+      <Word>float</Word>
+      <Word>double</Word>
+      <Word>vec2</Word>
+      <Word>vec3</Word>
+      <Word>vec4</Word>
+      <Word>ivec2</Word>
+      <Word>ivec3</Word>
+      <Word>ivec4</Word>
+      <Word>uvec2</Word>
+      <Word>uvec3</Word>
+      <Word>uvec4</Word>
+      <Word>bvec2</Word>
+      <Word>bvec3</Word>
+      <Word>bvec4</Word>
+      <Word>mat2</Word>
+      <Word>mat3</Word>
+      <Word>mat4</Word>
+      <Word>mat2x2</Word>
+      <Word>mat2x3</Word>
+      <Word>mat2x4</Word>
+      <Word>mat3x2</Word>
+      <Word>mat3x3</Word>
+      <Word>mat3x4</Word>
+      <Word>mat4x2</Word>
+      <Word>mat4x3</Word>
+      <Word>mat4x4</Word>
+      <Word>sampler2D</Word>
+      <Word>sampler3D</Word>
+      <Word>samplerCube</Word>
+    </Keywords>
+
+    <!-- 6. ISF & GLSL Built-in Variablen -->
+    <Keywords color="IsfBuiltinVar">
+      <Word>TIME</Word>
+      <Word>TIMEDELTA</Word>
+      <Word>DATE</Word>
+      <Word>FRAMEINDEX</Word>
+      <Word>RENDERSIZE</Word>
+      <Word>PASSINDEX</Word>
+      <Word>isf_FragNormCoord</Word>
+      <Word>isf_FragCoord</Word>
+      <Word>gl_FragColor</Word>
+      <Word>gl_FragCoord</Word>
+      <Word>gl_Position</Word>
+    </Keywords>
+
+    <!-- 7. GLSL & ISF Built-in Funktionen -->
+    <Keywords color="GlslBuiltinFunc">
+      <Word>radians</Word>
+      <Word>degrees</Word>
+      <Word>sin</Word>
+      <Word>cos</Word>
+      <Word>tan</Word>
+      <Word>asin</Word>
+      <Word>acos</Word>
+      <Word>atan</Word>
+      <Word>sinh</Word>
+      <Word>cosh</Word>
+      <Word>tanh</Word>
+      <Word>pow</Word>
+      <Word>exp</Word>
+      <Word>log</Word>
+      <Word>exp2</Word>
+      <Word>log2</Word>
+      <Word>sqrt</Word>
+      <Word>inversesqrt</Word>
+      <Word>abs</Word>
+      <Word>sign</Word>
+      <Word>floor</Word>
+      <Word>trunc</Word>
+      <Word>round</Word>
+      <Word>ceil</Word>
+      <Word>fract</Word>
+      <Word>mod</Word>
+      <Word>min</Word>
+      <Word>max</Word>
+      <Word>clamp</Word>
+      <Word>mix</Word>
+      <Word>step</Word>
+      <Word>smoothstep</Word>
+      <Word>length</Word>
+      <Word>distance</Word>
+      <Word>dot</Word>
+      <Word>cross</Word>
+      <Word>normalize</Word>
+      <Word>faceforward</Word>
+      <Word>reflect</Word>
+      <Word>refract</Word>
+      <Word>matrixCompMult</Word>
+      <Word>transpose</Word>
+      <Word>determinant</Word>
+      <Word>inverse</Word>
+      <Word>lessThan</Word>
+      <Word>lessThanEqual</Word>
+      <Word>greaterThan</Word>
+      <Word>greaterThanEqual</Word>
+      <Word>equal</Word>
+      <Word>notEqual</Word>
+      <Word>any</Word>
+      <Word>all</Word>
+      <Word>not</Word>
+      <Word>texture</Word>
+      <Word>texture2D</Word>
+      <Word>textureSize</Word>
+      <Word>dFdx</Word>
+      <Word>dFdy</Word>
+      <Word>fwidth</Word>
+      <Word>IMG_NORM_PIXEL</Word>
+      <Word>IMG_PIXEL</Word>
+      <Word>IMG_THIS_PIXEL</Word>
+      <Word>IMG_THIS_NORM_PIXEL</Word>
+      <Word>IMG_SIZE</Word>
+    </Keywords>
+
+    <!-- 8. Funktionsaufrufe -->
+    <Rule color="GlslBuiltinFunc">\b[a-zA-Z_][a-zA-Z0-9_]+(?=\s*\()</Rule>
+
+    <!-- 9. Zahlen -->
+    <Rule color="Number">\b0[xX][0-9a-fA-F]+|\b\d+(\.\d+)?([eE][+-]?\d+)?[fF]?\b</Rule>
+
+  </RuleSet>
+</SyntaxDefinition>
