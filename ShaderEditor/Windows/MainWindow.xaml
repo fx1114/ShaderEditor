@@ -143,8 +143,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- OpenGL Viewport -->
-                <glWpfControl:GLWpfControl Grid.Row="0"
-                           behaviors:OpenGlControlBehavior.IsEnabled="True" />
+                <glWpfControl:GLWpfControl Grid.Row="0" x:Name="OpenGlControl" />
 
                 <GridSplitter Grid.Row="1" Width="5" HorizontalAlignment="Stretch" Background="#333333" />
 

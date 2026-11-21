@@ -53,6 +53,9 @@ void main() {
     private string _editorText = string.Empty;
     private string _errorLog = string.Empty;
     private string _title = "Unbenannt.fs - ISF Shader Studio";
+    private string? _processedShaderSource;
+    private int _shaderRevision;
+    private readonly Dictionary<IShaderRenderer, int> _rendererRevisions = new();
     private bool _isDirty;
     private int _frameIndex;
 
@@ -129,12 +132,31 @@ void main() {
 
     public void InitializeRenderer()
     {
-        _renderer.Initialize();
-        ReloadShader(EditorText);
+        InitializeRenderer(_renderer);
+    }
+
+    public void InitializeRenderer(IShaderRenderer renderer)
+    {
+        renderer.Initialize();
+
+        if (_processedShaderSource == null)
+        {
+            ReloadShader(EditorText, renderer);
+        }
+        else
+        {
+            CompileRenderer(renderer);
+        }
     }
 
     public void Render(TimeSpan delta, double width, double height)
-        => _renderer.Render(delta, _stopwatch.Elapsed, _frameIndex++, width, height, Parameters);
+        => Render(_renderer, delta, width, height);
+
+    public void Render(IShaderRenderer renderer, TimeSpan delta, double width, double height)
+    {
+        EnsureRendererCurrent(renderer);
+        renderer.Render(delta, _stopwatch.Elapsed, _frameIndex++, width, height, Parameters);
+    }
 
     public void Dispose()
     {
@@ -159,6 +181,9 @@ void main() {
     }
 
     private void ReloadShader(string rawSource)
+        => ReloadShader(rawSource, _renderer);
+
+    private void ReloadShader(string rawSource, IShaderRenderer renderer)
     {
         var parseResult = IsfParser.ParseAndTranspile(rawSource);
         if (parseResult.Error != null)
@@ -199,13 +224,40 @@ void main() {
             Parameters.Add(parameter);
         }
 
+        _processedShaderSource = parseResult.ProcessedGlslCode;
+        _shaderRevision++;
+        CompileRenderer(renderer);
+    }
+
+    private void EnsureRendererCurrent(IShaderRenderer renderer)
+    {
+        if (_rendererRevisions.TryGetValue(renderer, out var revision) &&
+            revision == _shaderRevision)
+        {
+            return;
+        }
+
+        CompileRenderer(renderer);
+    }
+
+    private void CompileRenderer(IShaderRenderer renderer)
+    {
+        if (_processedShaderSource == null)
+        {
+            return;
+        }
+
         try
         {
-            _renderer.Compile(VertexShaderSource, parseResult.ProcessedGlslCode);
+            renderer.Compile(VertexShaderSource, _processedShaderSource);
+            _rendererRevisions[renderer] = _shaderRevision;
             ErrorLog = "ISF-Shader erfolgreich kompiliert.";
         }
         catch (Exception ex)
         {
+            // Auch bei einem Fehler wird die Version markiert, damit nicht
+            // bei jedem Frame erneut im OpenGL-Kontext kompiliert wird.
+            _rendererRevisions[renderer] = _shaderRevision;
             ErrorLog = $"Fehler beim Kompilieren des Shaders:\n{ex.Message}";
         }
     }

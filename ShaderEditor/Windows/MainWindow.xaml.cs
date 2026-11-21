@@ -10,6 +10,15 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = viewModel;
-        //OpenGlControl.Start(new GLWpfControlSettings { MajorVersion = 3, MinorVersion = 3 });
+
+        OpenGlControl.Start(new GLWpfControlSettings
+        {
+            MajorVersion = 3,
+            MinorVersion = 3
+        });
+
+        viewModel.InitializeRenderer();
+        OpenGlControl.Render += delta =>
+            viewModel.Render(delta, OpenGlControl.ActualWidth, OpenGlControl.ActualHeight);
     }
 }

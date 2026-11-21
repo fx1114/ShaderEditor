@@ -16,12 +16,25 @@ public sealed class WindowService : IWindowService
 
     public void ShowFullscreen(MainWindowViewModel viewModel)
     {
+        var screens = System.Windows.Forms.Screen.AllScreens;
+        if (screens.Length < 2) return; // Kein 2. Bildschirm vorhanden
+
+        // Den letzten sekundären Bildschirm auswählen
+        var secondScreen = screens.LastOrDefault(s => !s.Primary) ?? screens[1];
+
         var fullscreenWindow = new FullScreen(viewModel)
         {
             Owner = _mainWindow,
-            WindowState = WindowState.Maximized
+            WindowState = WindowState.Normal,
+            Left = secondScreen.Bounds.Left,
+            Top = secondScreen.Bounds.Top,
+            Width = secondScreen.Bounds.Width,
+            Height = secondScreen.Bounds.Height,
+            Topmost = true // Optional, verdeckt die Taskleiste sicher
         };
+
         fullscreenWindow.Show();
+        fullscreenWindow.WindowState = WindowState.Maximized;
     }
 
     public void CloseApplication() => _mainWindow?.Close();

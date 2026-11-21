@@ -20,6 +20,19 @@ public static class OpenGlControlBehavior
     public static void SetIsEnabled(DependencyObject element, bool value)
         => element.SetValue(IsEnabledProperty, value);
 
+    public static readonly DependencyProperty RendererProperty =
+        DependencyProperty.RegisterAttached(
+            "Renderer",
+            typeof(IShaderRenderer),
+            typeof(OpenGlControlBehavior),
+            new PropertyMetadata(null));
+
+    public static IShaderRenderer? GetRenderer(DependencyObject element)
+        => (IShaderRenderer?)element.GetValue(RendererProperty);
+
+    public static void SetRenderer(DependencyObject element, IShaderRenderer? value)
+        => element.SetValue(RendererProperty, value);
+
     private static void OnIsEnabledChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
     {
         if (dependencyObject is not GLWpfControl control)
@@ -46,11 +59,13 @@ public static class OpenGlControlBehavior
             return;
         }
 
+        var renderer = GetRenderer(control) ?? viewModel.Renderer;
+
         control.Start(new GLWpfControlSettings { MajorVersion = 3, MinorVersion = 3 });
-        viewModel.InitializeRenderer();
+        viewModel.InitializeRenderer(renderer);
 
         Action<TimeSpan> renderHandler = delta =>
-            viewModel.Render(delta, control.ActualWidth, control.ActualHeight);
+            viewModel.Render(renderer, delta, control.ActualWidth, control.ActualHeight);
         control.Render += renderHandler;
     }
 

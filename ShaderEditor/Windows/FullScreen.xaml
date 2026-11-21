@@ -12,5 +12,5 @@
         ResizeMode="NoResize"
          WindowStartupLocation="Manual"
          behaviors:WindowBehavior.ConfirmClose="True">
-     <glWpfControl:GLWpfControl behaviors:OpenGlControlBehavior.IsEnabled="True" />
+     <glWpfControl:GLWpfControl x:Name="OpenGlControl" />
 </Window>
