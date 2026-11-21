@@ -162,11 +162,22 @@
                     <RowDefinition Height="130" />
                 </Grid.RowDefinitions>
 
-                <avalonedit:TextEditor behaviors:AvalonEditBehavior.IsEnabled="True"
-                                       behaviors:AvalonEditBehavior.Text="{Binding EditorText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       FontFamily="Consolas" FontSize="13"
-                                       Background="#1E1E1E" Foreground="#D4D4D4"
-                                       ShowLineNumbers="True" />
+                <TabControl Grid.Row="0" Background="#1E1E1E" Foreground="#D4D4D4">
+                    <TabItem Header="Fragment-Shader" Background="#2D2D30" Foreground="#D4D4D4">
+                        <avalonedit:TextEditor behaviors:AvalonEditBehavior.IsEnabled="True"
+                                               behaviors:AvalonEditBehavior.Text="{Binding EditorText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                               FontFamily="Consolas" FontSize="13"
+                                               Background="#1E1E1E" Foreground="#D4D4D4"
+                                               ShowLineNumbers="True" />
+                    </TabItem>
+                    <TabItem Header="Vertex-Shader" Background="#2D2D30" Foreground="#D4D4D4">
+                        <avalonedit:TextEditor behaviors:AvalonEditBehavior.IsEnabled="True"
+                                               behaviors:AvalonEditBehavior.Text="{Binding VertexEditorText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                               FontFamily="Consolas" FontSize="13"
+                                               Background="#1E1E1E" Foreground="#D4D4D4"
+                                               ShowLineNumbers="True" />
+                    </TabItem>
+                </TabControl>
 
                 <TextBox Grid.Row="1" Text="{Binding ErrorLog, Mode=OneWay}" IsReadOnly="True" 
                          Background="#252526" Foreground="#F48771" 

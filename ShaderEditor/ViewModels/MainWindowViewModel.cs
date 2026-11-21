@@ -14,12 +14,27 @@ namespace ShaderEditor.ViewModels;
 
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
-    private const string VertexShaderSource = @"
-        #version 330 core
-        layout (location = 0) in vec2 aPos;
-        void main() {
-            gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);
-        }";
+    private const string DefaultVertexShaderSource = @"#version 330 core
+layout (location = 0) in vec2 aPos;
+void main() {
+    float deg = 0.0;
+    float rad = deg * 3.14159265359 / 180;
+
+    vec2 trans = vec2(0.0, 0.0);
+    vec2 scale = vec2(1.0, 1.0);
+    vec2 scissor = vec2(0.0, 0.0);
+
+    mat2 rotMat = mat2(cos(rad), -sin(rad), sin(rad), cos(rad));
+    mat2 scaleMat = mat2(scale.x, 0.0, 0.0, scale.y);
+    mat2 scissorMat = mat2(1.0, scissor.y, scissor.x, 1.0);
+
+    vec2 pos = vec2(aPos.x, aPos.y) + trans;
+    pos = rotMat * pos;
+    pos = scale * pos;
+    pos = scissorMat * pos;
+
+    gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);
+}";
 
     private const string SampleIsfShader = @"/*{
     ""DESCRIPTION"": ""Interaktiver ISF Test-Shader"",
@@ -56,6 +71,7 @@ void main() {
     private string? _shaderFolderPath;
     private ShaderFileItem? _selectedShader;
     private string _editorText = string.Empty;
+    private string _vertexEditorText = string.Empty;
     private string _errorLog = string.Empty;
     private string _title = "Unbenannt.fs - ISF Shader Studio";
     private string? _processedShaderSource;
@@ -91,8 +107,25 @@ void main() {
         _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
         _debounceTimer.Tick += DebounceTimer_Tick;
 
-        SetInitialText(SampleIsfShader);
+        SetInitialText(SampleIsfShader, DefaultVertexShaderSource);
         _stopwatch.Start();
+    }
+
+    public string VertexEditorText
+    {
+        get => _vertexEditorText;
+        set
+        {
+            if (!SetProperty(ref _vertexEditorText, value))
+            {
+                return;
+            }
+
+            IsDirty = true;
+            UpdateWindowTitle();
+            _debounceTimer.Stop();
+            _debounceTimer.Start();
+        }
     }
 
     public ObservableCollection<IsfParameterViewModel> Parameters { get; }
@@ -213,7 +246,11 @@ void main() {
         try
         {
             _currentFilePath = path;
-            SetInitialText(_fileService.ReadAllText(path));
+            var vertexPath = Path.ChangeExtension(path, ".vs");
+            var vertexSource = File.Exists(vertexPath)
+                ? _fileService.ReadAllText(vertexPath)
+                : DefaultVertexShaderSource;
+            SetInitialText(_fileService.ReadAllText(path), vertexSource);
             ReloadShader(EditorText);
             return true;
         }
@@ -284,10 +321,12 @@ void main() {
         ReloadShader(EditorText);
     }
 
-    private void SetInitialText(string text)
+    private void SetInitialText(string fragmentText, string vertexText)
     {
-        _editorText = text;
+        _editorText = fragmentText;
+        _vertexEditorText = vertexText;
         OnPropertyChanged(nameof(EditorText));
+        OnPropertyChanged(nameof(VertexEditorText));
         IsDirty = false;
         UpdateWindowTitle();
     }
@@ -504,7 +543,7 @@ void main() {
 
         try
         {
-            renderer.Compile(VertexShaderSource, _processedShaderSource);
+            renderer.Compile(VertexEditorText, _processedShaderSource);
             _rendererRevisions[renderer] = _shaderRevision;
             ErrorLog = "ISF-Shader erfolgreich kompiliert.";
         }
@@ -521,7 +560,7 @@ void main() {
     {
         if (!ConfirmDiscardChanges()) return;
         _currentFilePath = null;
-        SetInitialText(SampleIsfShader);
+        SetInitialText(SampleIsfShader, DefaultVertexShaderSource);
         ReloadShader(EditorText);
     }
 
@@ -534,7 +573,11 @@ void main() {
         try
         {
             _currentFilePath = path;
-            SetInitialText(_fileService.ReadAllText(path));
+            var vertexPath = Path.ChangeExtension(path, ".vs");
+            var vertexSource = File.Exists(vertexPath)
+                ? _fileService.ReadAllText(vertexPath)
+                : DefaultVertexShaderSource;
+            SetInitialText(_fileService.ReadAllText(path), vertexSource);
             ReloadShader(EditorText);
         }
         catch (Exception ex)
@@ -564,6 +607,7 @@ void main() {
         try
         {
             _fileService.WriteAllText(path, EditorText);
+            _fileService.WriteAllText(Path.ChangeExtension(path, ".vs"), VertexEditorText);
             _currentFilePath = path;
             IsDirty = false;
             UpdateWindowTitle();
