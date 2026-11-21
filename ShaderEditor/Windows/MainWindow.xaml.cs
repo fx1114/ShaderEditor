@@ -1,5 +1,6 @@
 ﻿using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
+using Microsoft.Win32;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Wpf;
 using ShaderEditor.Isf;
@@ -11,21 +12,21 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using System.Xml;
-using Microsoft.Win32;
 
-namespace ShaderEditor
+namespace ShaderEditor.Windows
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
-        private int _shaderProgram;
-        private int _vao;
+        private OpenGlView GLView;
+        //private int _shaderProgram;
         private int _frameIndex;
         private readonly Stopwatch _stopwatch = new();
         private readonly DispatcherTimer _debounceTimer;
@@ -77,8 +78,9 @@ void main() {
                 ReloadIsfShader(CodeEditor.Text);
             };
 
+            GLView = new OpenGlView();
             OpenGlControl.Start(new GLWpfControlSettings { MajorVersion = 3, MinorVersion = 3 });
-            SetupQuad();
+            GLView.SetupQuad();
 
             CodeEditor.Text = SampleIsfShader;
             ReloadIsfShader(SampleIsfShader);
@@ -107,21 +109,6 @@ void main() {
             CodeEditor.TextArea.TextView.CurrentLineBackground = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
             CodeEditor.TextArea.TextView.CurrentLineBorder = new Pen(new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), 1);
             CodeEditor.Options.HighlightCurrentLine = true;
-        }
-
-        private void SetupQuad()
-        {
-            float[] quadVertices = {
-                -1f,  1f,  -1f, -1f,   1f, -1f,
-                -1f,  1f,   1f, -1f,   1f,  1f
-            };
-            _vao = GL.GenVertexArray();
-            int vbo = GL.GenBuffer();
-            GL.BindVertexArray(_vao);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BufferData(BufferTarget.ArrayBuffer, quadVertices.Length * sizeof(float), quadVertices, BufferUsageHint.StaticDraw);
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 2, VertexAttribPointerType.Float, false, 2 * sizeof(float), 0);
         }
 
         private void ReloadIsfShader(string rawSource)
@@ -155,86 +142,22 @@ void main() {
             _activeParameters = parseResult.Parameters;
             ParametersPanel.ItemsSource = _activeParameters;
 
-            CompileGlsl(parseResult.ProcessedGlslCode);
-        }
-
-        private void CompileGlsl(string fragmentSource)
-        {
-            int vs = GL.CreateShader(ShaderType.VertexShader);
-            GL.ShaderSource(vs, VertexShaderSource);
-            GL.CompileShader(vs);
-
-            int fs = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(fs, fragmentSource);
-            GL.CompileShader(fs);
-
-            GL.GetShader(fs, ShaderParameter.CompileStatus, out int success);
-            if (success == 0)
+            try 
             {
-                ErrorLog.Text = GL.GetShaderInfoLog(fs);
-                GL.DeleteShader(vs);
-                GL.DeleteShader(fs);
-                return;
+                GLView.CompileGlsl(VertexShaderSource, parseResult.ProcessedGlslCode);
+                ErrorLog.Text = "ISF-Shader erfolgreich kompiliert.";
             }
-
-            int newProgram = GL.CreateProgram();
-            GL.AttachShader(newProgram, vs);
-            GL.AttachShader(newProgram, fs);
-            GL.LinkProgram(newProgram);
-
-            GL.DeleteShader(vs);
-            GL.DeleteShader(fs);
-
-            if (_shaderProgram != 0) GL.DeleteProgram(_shaderProgram);
-            _shaderProgram = newProgram;
-            ErrorLog.Text = "ISF-Shader erfolgreich kompiliert.";
+            catch (Exception ex)
+            {
+                ErrorLog.Text = $"Fehler beim Kompilieren des Shaders:\n{ex.Message}";
+            }
         }
 
+
+        
         private void OpenGlControl_Render(TimeSpan delta)
         {
-            GL.Clear(ClearBufferMask.ColorBufferBit);
-            if (_shaderProgram == 0) return;
-
-            /*
-            int width = OpenGlControl.FrameBufferWidth;
-            int height = OpenGlControl.FrameBufferHeight;
-
-            GL.Viewport(0, 0, width, height);
-            */
-
-            GL.UseProgram(_shaderProgram);
-
-            // 1. Standard ISF Uniforms übergeben
-            GL.Uniform1(GL.GetUniformLocation(_shaderProgram, "TIME"), (float)_stopwatch.Elapsed.TotalSeconds);
-            GL.Uniform1(GL.GetUniformLocation(_shaderProgram, "TIMEDELTA"), (float)delta.TotalSeconds);
-            GL.Uniform1(GL.GetUniformLocation(_shaderProgram, "FRAMEINDEX"), _frameIndex++);
-            GL.Uniform2(GL.GetUniformLocation(_shaderProgram, "RENDERSIZE"), (float)OpenGlControl.ActualWidth, (float)OpenGlControl.ActualHeight);
-
-            // 2. Dynamische ISF INPUTS übergeben
-            foreach (var param in _activeParameters)
-            {
-                int loc = GL.GetUniformLocation(_shaderProgram, param.Name);
-                if (loc == -1) continue;
-
-                switch (param)
-                {
-                    case FloatParameterVm f:
-                        GL.Uniform1(loc, f.Value);
-                        break;
-                    case BoolParameterVm b:
-                        GL.Uniform1(loc, b.Value ? 1 : 0);
-                        break;
-                    case Point2DParameterVm p:
-                        GL.Uniform2(loc, p.X, p.Y);
-                        break;
-                    case ColorParameterVm c:
-                        GL.Uniform4(loc, c.R, c.G, c.B, c.A);
-                        break;
-                }
-            }
-
-            GL.BindVertexArray(_vao);
-            GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
+            GLView.Render(delta, _stopwatch, _frameIndex++, OpenGlControl.ActualWidth, OpenGlControl.ActualHeight, _activeParameters);
         }
 
         private void CodeEditor_TextChanged(object sender, EventArgs e)
@@ -275,7 +198,7 @@ void main() {
         {
             if (!_isDirty) return true;
 
-            var result = MessageBox.Show(
+            var result = System.Windows.MessageBox.Show(
                 "Es gibt ungespeicherte Änderungen. Möchtest du diese vorab speichern?",
                 "Ungespeicherte Änderungen",
                 MessageBoxButton.YesNoCancel,
@@ -300,7 +223,7 @@ void main() {
         {
             if (!ConfirmDiscardChanges()) return;
 
-            var dialog = new OpenFileDialog
+            var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 Title = "ISF-Shader öffnen",
                 Filter = "ISF Fragment Shader (*.fs)|*.fs|GLSL Shader (*.glsl;*.frag)|*.glsl;*.frag|Alle Dateien (*.*)|*.*"
@@ -318,7 +241,7 @@ void main() {
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Fehler beim Laden der Datei:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                    System.Windows.MessageBox.Show($"Fehler beim Laden der Datei:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -340,14 +263,14 @@ void main() {
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Fehler beim Speichern:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"Fehler beim Speichern:\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
 
         private bool SaveShaderAs()
         {
-            var dialog = new SaveFileDialog
+            var dialog = new Microsoft.Win32.SaveFileDialog
             {
                 Title = "ISF-Shader speichern unter",
                 Filter = "ISF Fragment Shader (*.fs)|*.fs|GLSL Shader (*.glsl;*.frag)|*.glsl;*.frag|Alle Dateien (*.*)|*.*",
@@ -412,8 +335,7 @@ void main() {
             secondGlControl.Render += (delta) =>
             {
                 // Hier deine Render-Methode aufrufen
-                //RenderScene();
-                OpenGlControl_Render(delta);
+                GLView.Render(delta, _stopwatch, _frameIndex, secondGlControl.ActualWidth, secondGlControl.ActualHeight, _activeParameters);
             };
 
             fullscreenWindow.Content = secondGlControl;

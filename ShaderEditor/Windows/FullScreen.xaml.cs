@@ -10,16 +10,21 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ShaderEditor
+namespace ShaderEditor.Windows
 {
     /// <summary>
     /// Interaktionslogik für FullScreen.xaml
     /// </summary>
     public partial class FullScreen : Window
     {
+        private OpenGlView GLView;
+
+
         public FullScreen()
         {
             InitializeComponent();
+            GLView = new OpenGlView();
+            GLView.SetupQuad();
         }
     }
 }
