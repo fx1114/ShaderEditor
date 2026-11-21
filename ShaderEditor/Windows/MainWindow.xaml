@@ -104,19 +104,43 @@
             <Button DockPanel.Dock="Left" Width="50" Background="#2D2D30" Foreground="#D4D4D4" FontWeight="Bold"
                     Content="FS" Command="{Binding FullscreenCommand}"/>
         </DockPanel>
+        <DockPanel DockPanel.Dock="Top" Margin="0,6,0,6">
+            <Button DockPanel.Dock="Right" Width="110" Content="Ordner wählen..."
+                    Background="#2D2D30" Foreground="#D4D4D4" Command="{Binding SelectFolderCommand}" />
+            <TextBox Text="{Binding ShaderFolderPath, Mode=OneWay}" IsReadOnly="True"
+                     Background="#252526" Foreground="#D4D4D4" BorderBrush="#3F3F46"
+                     VerticalContentAlignment="Center" Padding="6,0" />
+        </DockPanel>
         <Grid>
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="5" />
                 <ColumnDefinition Width="1.2*" />
                 <ColumnDefinition Width="5" />
                 <ColumnDefinition Width="1.2*" />
-                <!--
-                <ColumnDefinition Width="5" />
-                <ColumnDefinition Width="280" />
-                -->
             </Grid.ColumnDefinitions>
 
-            <!-- Spalte 1: ISF Code Editor & Compiler-Output -->
-            <Grid Grid.Column="0">
+            <!-- Shader-Explorer -->
+            <Border Grid.Column="0" Background="#252526" Padding="8">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="SHADER" FontSize="12" FontWeight="Bold"
+                               Foreground="#888888" Margin="0,0,0,8" />
+                    <ListBox ItemsSource="{Binding ShaderFiles}" SelectedItem="{Binding SelectedShader, Mode=TwoWay}"
+                             Background="#252526" Foreground="#D4D4D4" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding FileName}" Padding="4,6" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#333333" />
+
+            <!-- ISF Code Editor & Compiler-Output -->
+            <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
                     <RowDefinition Height="130" />
@@ -133,9 +157,9 @@
                          FontFamily="Consolas" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
             </Grid>
 
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#333333" />
+            <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch" Background="#333333" />
             
-            <Grid Grid.Column="2">
+            <Grid Grid.Column="4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="360" />
                     <RowDefinition Height="5" />

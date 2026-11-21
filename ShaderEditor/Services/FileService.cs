@@ -7,6 +7,16 @@ public sealed class FileService : IFileService
 {
     private const string Filter = "ISF-Shader (*.fs)|*.fs|GLSL-Shader (*.glsl;*.frag)|*.glsl;*.frag|Alle Dateien (*.*)|*.*";
 
+    public string? SelectFolder()
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Shaderordner auswählen"
+        };
+
+        return dialog.ShowDialog() == true ? dialog.FolderName : null;
+    }
+
     public string? OpenShader()
     {
         var dialog = new OpenFileDialog

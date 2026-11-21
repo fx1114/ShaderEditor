@@ -50,6 +50,8 @@ void main() {
     private readonly DispatcherTimer _debounceTimer;
     private readonly Stopwatch _stopwatch = new();
     private string? _currentFilePath;
+    private string? _shaderFolderPath;
+    private ShaderFileItem? _selectedShader;
     private string _editorText = string.Empty;
     private string _errorLog = string.Empty;
     private string _title = "Unbenannt.fs - ISF Shader Studio";
@@ -70,9 +72,11 @@ void main() {
         _windowService = windowService;
         _renderer = renderer;
         Parameters = new ObservableCollection<IsfParameterViewModel>();
+        ShaderFiles = new ObservableCollection<ShaderFileItem>();
 
         NewCommand = new RelayCommand(_ => NewShader());
         OpenCommand = new RelayCommand(_ => OpenShader());
+        SelectFolderCommand = new RelayCommand(_ => SelectShaderFolder());
         SaveCommand = new RelayCommand(_ => SaveShader());
         SaveAsCommand = new RelayCommand(_ => SaveShaderAs());
         ExitCommand = new RelayCommand(_ => _windowService.CloseApplication());
@@ -86,14 +90,51 @@ void main() {
     }
 
     public ObservableCollection<IsfParameterViewModel> Parameters { get; }
+    public ObservableCollection<ShaderFileItem> ShaderFiles { get; }
     public IShaderRenderer Renderer => _renderer;
     public ICommand NewCommand { get; }
     public ICommand OpenCommand { get; }
+    public ICommand SelectFolderCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand SaveAsCommand { get; }
     public ICommand ExitCommand { get; }
     public ICommand FullscreenCommand { get; }
     public TimeSpan Elapsed => _stopwatch.Elapsed;
+
+    public string? ShaderFolderPath
+    {
+        get => _shaderFolderPath;
+        private set
+        {
+            if (!SetProperty(ref _shaderFolderPath, value))
+            {
+                return;
+            }
+
+            RefreshShaderFiles();
+        }
+    }
+
+    public ShaderFileItem? SelectedShader
+    {
+        get => _selectedShader;
+        set
+        {
+            if (ReferenceEquals(_selectedShader, value))
+            {
+                return;
+            }
+
+            if (value != null && !LoadExplorerShader(value.FilePath))
+            {
+                OnPropertyChanged(nameof(SelectedShader));
+                return;
+            }
+
+            _selectedShader = value;
+            OnPropertyChanged(nameof(SelectedShader));
+        }
+    }
 
     public string EditorText
     {
@@ -109,6 +150,69 @@ void main() {
             UpdateWindowTitle();
             _debounceTimer.Stop();
             _debounceTimer.Start();
+        }
+    }
+
+    private void SelectShaderFolder()
+    {
+        var path = _fileService.SelectFolder();
+        if (path != null)
+        {
+            ShaderFolderPath = path;
+        }
+    }
+
+    private void RefreshShaderFiles()
+    {
+        ShaderFiles.Clear();
+
+        if (string.IsNullOrWhiteSpace(ShaderFolderPath) || !Directory.Exists(ShaderFolderPath))
+        {
+            return;
+        }
+
+        try
+        {
+            var extensions = new[] { ".fs", ".glsl", ".frag" };
+            foreach (var path in Directory.EnumerateFiles(ShaderFolderPath)
+                         .Where(path => extensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+                         .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase))
+            {
+                ShaderFiles.Add(new ShaderFileItem(path));
+            }
+
+            var current = ShaderFiles.FirstOrDefault(shader =>
+                string.Equals(shader.FilePath, _currentFilePath, StringComparison.OrdinalIgnoreCase));
+            if (current != null)
+            {
+                _selectedShader = current;
+                OnPropertyChanged(nameof(SelectedShader));
+            }
+        }
+        catch (Exception ex)
+        {
+            _messageService.ShowError($"Fehler beim Einlesen des Shaderordners:\n{ex.Message}", "Fehler");
+        }
+    }
+
+    private bool LoadExplorerShader(string path)
+    {
+        if (!ConfirmDiscardChanges())
+        {
+            return false;
+        }
+
+        try
+        {
+            _currentFilePath = path;
+            SetInitialText(_fileService.ReadAllText(path));
+            ReloadShader(EditorText);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _messageService.ShowError($"Fehler beim Laden der Datei:\n{ex.Message}", "Fehler");
+            return false;
         }
     }
 
@@ -341,4 +445,16 @@ void main() {
             : System.IO.Path.GetFileName(_currentFilePath);
         Title = $"{fileName}{(IsDirty ? "*" : string.Empty)} - ISF Shader Studio";
     }
+}
+
+public sealed class ShaderFileItem
+{
+    public ShaderFileItem(string filePath)
+    {
+        FilePath = filePath;
+        FileName = Path.GetFileName(filePath);
+    }
+
+    public string FilePath { get; }
+    public string FileName { get; }
 }
