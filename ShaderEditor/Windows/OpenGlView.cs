@@ -1,21 +1,24 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using OpenTK.Graphics.OpenGL4;
+using ShaderEditor.Services;
 using ShaderEditor.Isf;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 namespace ShaderEditor.Windows
 {
-    public class OpenGlView
+    public sealed class OpenGlView : IShaderRenderer
     {
-        private int width = 800;
-        private int height = 600;
         private int _vao;
         private int _shaderProgram = 0;
+        private bool _initialized;
 
-        public void SetupQuad()
+        public void Initialize()
         {
+            if (_initialized)
+            {
+                return;
+            }
+
             float[] quadVertices = {
                 -1f,  1f,  -1f, -1f,   1f, -1f,
                 -1f,  1f,   1f, -1f,   1f,  1f
@@ -27,26 +30,10 @@ namespace ShaderEditor.Windows
             GL.BufferData(BufferTarget.ArrayBuffer, quadVertices.Length * sizeof(float), quadVertices, BufferUsageHint.StaticDraw);
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 2, VertexAttribPointerType.Float, false, 2 * sizeof(float), 0);
+            _initialized = true;
         }
 
-        public OpenGlView()
-        {
-            //GL.Viewport(0, 0, width, height);
-        }
-
-        public void ChangeSize(int newWidth, int newHeight)
-        {
-            width = newWidth;
-            height = newHeight;
-            GL.Viewport(0, 0, width, height);
-        }
-
-        public int getVao()
-        {
-            return _vao;
-        }
-
-        public void CompileGlsl(string vertexShaderSource, string fragmentSource)
+        public void Compile(string vertexShaderSource, string fragmentSource)
         {
             int vs = GL.CreateShader(ShaderType.VertexShader);
             GL.ShaderSource(vs, vertexShaderSource);
@@ -81,7 +68,7 @@ namespace ShaderEditor.Windows
             return;
         }
 
-        public void Render(TimeSpan delta, Stopwatch stopwatch, int frameIndex, double width, double height, IEnumerable<IsfParameterViewModel> activeParameters)
+        public void Render(TimeSpan delta, TimeSpan elapsed, int frameIndex, double width, double height, IEnumerable<IsfParameterViewModel> activeParameters)
         {
             GL.Clear(ClearBufferMask.ColorBufferBit);
             if (_shaderProgram == 0) return;
@@ -96,7 +83,7 @@ namespace ShaderEditor.Windows
             GL.UseProgram(_shaderProgram);
 
             // 1. Standard ISF Uniforms übergeben
-            GL.Uniform1(GL.GetUniformLocation(_shaderProgram, "TIME"), (float)stopwatch.Elapsed.TotalSeconds);
+            GL.Uniform1(GL.GetUniformLocation(_shaderProgram, "TIME"), (float)elapsed.TotalSeconds);
             GL.Uniform1(GL.GetUniformLocation(_shaderProgram, "TIMEDELTA"), (float)delta.TotalSeconds);
             GL.Uniform1(GL.GetUniformLocation(_shaderProgram, "FRAMEINDEX"), frameIndex);
             GL.Uniform2(GL.GetUniformLocation(_shaderProgram, "RENDERSIZE"), (float)width, (float)height);

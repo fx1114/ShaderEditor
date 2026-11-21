@@ -5,10 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         xmlns:local="clr-namespace:ShaderEditor.Windows"
+        xmlns:behaviors="clr-namespace:ShaderEditor.Behaviors"
         mc:Ignorable="d"
         Title="FullScreen" Height="450" Width="800"
         WindowStyle="None"
         ResizeMode="NoResize"
-        WindowStartupLocation="Manual">
-    <glWpfControl:GLWpfControl x:Name="OpenGlControl" />
+         WindowStartupLocation="Manual"
+         behaviors:WindowBehavior.ConfirmClose="True">
+     <glWpfControl:GLWpfControl behaviors:OpenGlControlBehavior.IsEnabled="True" />
 </Window>

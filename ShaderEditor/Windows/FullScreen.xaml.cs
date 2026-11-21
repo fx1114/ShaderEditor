@@ -1,30 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using ShaderEditor.ViewModels;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
-namespace ShaderEditor.Windows
+namespace ShaderEditor.Windows;
+
+public partial class FullScreen : Window
 {
-    /// <summary>
-    /// Interaktionslogik für FullScreen.xaml
-    /// </summary>
-    public partial class FullScreen : Window
+    public FullScreen(MainWindowViewModel viewModel)
     {
-        private OpenGlView GLView;
-
-
-        public FullScreen()
-        {
-            InitializeComponent();
-            GLView = new OpenGlView();
-            GLView.SetupQuad();
-        }
+        InitializeComponent();
+        DataContext = viewModel;
     }
 }
