@@ -4,6 +4,9 @@ using ShaderEditor.Services;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
 using System.Windows.Threading;
 
@@ -58,6 +61,7 @@ void main() {
     private string? _processedShaderSource;
     private int _shaderRevision;
     private readonly Dictionary<IShaderRenderer, int> _rendererRevisions = new();
+    private readonly List<IsfParameterViewModel> _hiddenParameters = new();
     private bool _isDirty;
     private int _frameIndex;
 
@@ -76,6 +80,8 @@ void main() {
 
         NewCommand = new RelayCommand(_ => NewShader());
         OpenCommand = new RelayCommand(_ => OpenShader());
+        SetDefaultCommand = new RelayCommand(parameter => SetParameterDefault(parameter as IsfParameterViewModel));
+        RemoveParameterCommand = new RelayCommand(parameter => RemoveParameter(parameter as IsfParameterViewModel));
         SelectFolderCommand = new RelayCommand(_ => SelectShaderFolder());
         SaveCommand = new RelayCommand(_ => SaveShader());
         SaveAsCommand = new RelayCommand(_ => SaveShaderAs());
@@ -94,6 +100,8 @@ void main() {
     public IShaderRenderer Renderer => _renderer;
     public ICommand NewCommand { get; }
     public ICommand OpenCommand { get; }
+    public ICommand SetDefaultCommand { get; }
+    public ICommand RemoveParameterCommand { get; }
     public ICommand SelectFolderCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand SaveAsCommand { get; }
@@ -289,6 +297,7 @@ void main() {
 
     private void ReloadShader(string rawSource, IShaderRenderer renderer)
     {
+        var hiddenParameters = _hiddenParameters.ToArray();
         var parseResult = IsfParser.ParseAndTranspile(rawSource);
         if (parseResult.Error != null)
         {
@@ -328,9 +337,151 @@ void main() {
             Parameters.Add(parameter);
         }
 
+        foreach (var parameter in hiddenParameters)
+        {
+            if (Parameters.All(existing => existing.Name != parameter.Name))
+            {
+                parameter.IsVisible = false;
+                Parameters.Add(parameter);
+            }
+        }
+
         _processedShaderSource = parseResult.ProcessedGlslCode;
         _shaderRevision++;
         CompileRenderer(renderer);
+    }
+
+    private void SetParameterDefault(IsfParameterViewModel? parameter)
+    {
+        if (parameter == null || !TryUpdateIsfHeader(root =>
+            {
+                var inputs = GetInputs(root);
+                var input = inputs.FirstOrDefault(node =>
+                    string.Equals(node?["NAME"]?.GetValue<string>(), parameter.Name, StringComparison.Ordinal));
+                if (input == null)
+                {
+                    return false;
+                }
+
+                input["DEFAULT"] = CreateJsonValue(parameter);
+                return true;
+            }))
+        {
+            return;
+        }
+
+        ErrorLog = $"Default-Wert übernommen: {parameter.DisplayLabel}";
+    }
+
+    private void RemoveParameter(IsfParameterViewModel? parameter)
+    {
+        if (parameter == null || _hiddenParameters.Any(hidden => hidden.Name == parameter.Name))
+        {
+            return;
+        }
+
+        if (!TryUpdateIsfHeader(root =>
+            {
+                var inputs = GetInputs(root);
+                var input = inputs.FirstOrDefault(node =>
+                    string.Equals(node?["NAME"]?.GetValue<string>(), parameter.Name, StringComparison.Ordinal));
+                if (input == null)
+                {
+                    return false;
+                }
+
+                inputs.Remove(input);
+                return true;
+            }))
+        {
+            return;
+        }
+
+        var parameterType = parameter switch
+        {
+            FloatParameterVm => "float",
+            BoolParameterVm => "bool",
+            Point2DParameterVm => "vec2",
+            ColorParameterVm => "vec4",
+            _ => null
+        };
+        if (parameterType == null)
+        {
+            return;
+        }
+
+        var uniformDeclaration = $"{parameterType} {parameter.Name} = {parameter.ToString()};";
+        if (!Regex.IsMatch(EditorText, $@"\buniform\s+\w+\s+{Regex.Escape(parameter.Name)}\s*;"))
+        {
+            var header = Regex.Match(EditorText, @"/\*\s*(\{[\s\S]*?\})\s*\*/");
+            if (header.Success)
+            {
+                EditorText = EditorText.Insert(header.Index + header.Length,
+                    $"\n\n{uniformDeclaration}");
+            }
+        }
+
+        parameter.IsVisible = false;
+        _hiddenParameters.Add(parameter);
+        ErrorLog = $"Parameter entfernt, Uniform beibehalten: {parameter.DisplayLabel}";
+    }
+
+    private bool TryUpdateIsfHeader(Func<JsonObject, bool> update)
+    {
+        var header = Regex.Match(EditorText, @"/\*\s*(\{[\s\S]*?\})\s*\*/");
+        if (!header.Success)
+        {
+            ErrorLog = "Der Shader enthält keinen gültigen ISF-JSON-Header.";
+            return false;
+        }
+
+        try
+        {
+            var root = JsonNode.Parse(header.Groups[1].Value) as JsonObject;
+            if (root == null || !update(root))
+            {
+                ErrorLog = "Der ISF-Parameter wurde im JSON-Header nicht gefunden.";
+                return false;
+            }
+
+            var json = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            EditorText = EditorText[..header.Index] + $"/*{json}*/" +
+                         EditorText[(header.Index + header.Length)..];
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ErrorLog = $"JSON-Header konnte nicht aktualisiert werden: {ex.Message}";
+            return false;
+        }
+    }
+
+    private static JsonArray GetInputs(JsonObject root)
+    {
+        if (root["INPUTS"] is not JsonArray inputs)
+        {
+            inputs = new JsonArray();
+            root["INPUTS"] = inputs;
+        }
+
+        return inputs;
+    }
+
+    private static JsonNode CreateJsonValue(IsfParameterViewModel parameter)
+    {
+        switch (parameter)
+        {
+            case FloatParameterVm value:
+                return JsonValue.Create(value.Value)!;
+            case BoolParameterVm value:
+                return JsonValue.Create(value.Value)!;
+            case Point2DParameterVm value:
+                return new JsonArray(value.X, value.Y);
+            case ColorParameterVm value:
+                return new JsonArray(value.R, value.G, value.B, value.A);
+            default:
+                throw new NotSupportedException($"Nicht unterstützter ISF-Parameter: {parameter.Name}");
+        }
     }
 
     private void EnsureRendererCurrent(IShaderRenderer renderer)

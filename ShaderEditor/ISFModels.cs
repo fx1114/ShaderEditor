@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -51,8 +52,12 @@ using System.Text.Json.Serialization;
     // --- UI-ViewModels für die dynamischen Controls ---
     public abstract class IsfParameterViewModel : INotifyPropertyChanged
     {
+        private bool _isVisible = true;
         public string Name { get; init; } = string.Empty;
         public string DisplayLabel { get; init; } = string.Empty;
+        public bool IsVisible { get => _isVisible; set { _isVisible = value; OnPropertyChanged(); } }
+
+        public abstract override string ToString();
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? prop = null)
@@ -65,12 +70,14 @@ using System.Text.Json.Serialization;
         public float Value { get => _value; set { _value = value; OnPropertyChanged(); } }
         public float Min { get; init; } = 0f;
         public float Max { get; init; } = 1f;
+        public override string ToString() => Value.ToString("0.###", CultureInfo.InvariantCulture);
     }
 
     public class BoolParameterVm : IsfParameterViewModel
     {
         private bool _value;
         public bool Value { get => _value; set { _value = value; OnPropertyChanged(); } }
+        public override string ToString() => Value ? "true" : "false";
     }
 
     public class Point2DParameterVm : IsfParameterViewModel
@@ -83,6 +90,7 @@ using System.Text.Json.Serialization;
         public float MaxX { get; init; } = 1f;
         public float MinY { get; init; } = 0f;
         public float MaxY { get; init; } = 1f;
+        public override string ToString() => $"({X:0.###}, {Y:0.###})";
     }
 
     public class ColorParameterVm : IsfParameterViewModel
@@ -92,5 +100,6 @@ using System.Text.Json.Serialization;
         public float G { get => _g; set { _g = value; OnPropertyChanged(); } }
         public float B { get => _b; set { _b = value; OnPropertyChanged(); } }
         public float A { get => _a; set { _a = value; OnPropertyChanged(); } }
+        public override string ToString() => $"({R:0.###}, {G:0.###}, {B:0.###}, {A:0.###})";
     }
 }

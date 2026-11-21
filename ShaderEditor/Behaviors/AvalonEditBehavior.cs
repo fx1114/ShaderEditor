@@ -1,4 +1,5 @@
 using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using System.Reflection;
@@ -56,6 +57,18 @@ public static class AvalonEditBehavior
             editor.Loaded -= Editor_Loaded;
         }
     }
+
+    /*
+    private static void TextArea_OnSelectionChanged(object? sender, EventArgs e)
+    {
+        Selection? selection = (sender as TextArea)?.Selection;
+        if (selection != null)
+        {
+            MessageBox.Show("Selection changed\n Start line: " + selection.StartPosition.Line + " column: " + selection.StartPosition.Column
+                + "\n End line: " + selection.EndPosition.Line + " column: " + selection.EndPosition.Column);
+        }
+    }
+    */
 
     private static void OnTextChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
     {

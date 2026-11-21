@@ -23,64 +23,80 @@
     </Window.InputBindings>
     
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <!-- Template für ISF "float" -> Slider + Zahlenwert -->
         <DataTemplate DataType="{x:Type isf:FloatParameterVm}">
-            <StackPanel Margin="0,0,0,12">
-                <DockPanel>
-                    <TextBlock Text="{Binding DisplayLabel}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Value, StringFormat={}{0:F3}}" HorizontalAlignment="Right" Foreground="#9CDCFE" />
-                </DockPanel>
-                <Slider Minimum="{Binding Min}" Maximum="{Binding Max}" Value="{Binding Value, Mode=TwoWay}" Margin="0,4,0,0" />
-            </StackPanel>
+            <Grid Margin="0,0,0,12" Visibility="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock Text="{Binding DisplayLabel}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Value, StringFormat={}{0:F3}}" HorizontalAlignment="Right" Foreground="#9CDCFE" />
+                    </DockPanel>
+                    <Slider Minimum="{Binding Min}" Maximum="{Binding Max}" Value="{Binding Value, Mode=TwoWay}" Margin="0,4,8,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                    <Button Content="Default" Command="{Binding DataContext.SetDefaultCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" />
+                    <Button Content="Entfernen" Command="{Binding DataContext.RemoveParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" />
+                </StackPanel>
+            </Grid>
         </DataTemplate>
 
         <!-- Template für ISF "bool" / "event" -> CheckBox -->
         <DataTemplate DataType="{x:Type isf:BoolParameterVm}">
-            <CheckBox Content="{Binding DisplayLabel}" IsChecked="{Binding Value, Mode=TwoWay}" 
-                      Foreground="#D4D4D4" Margin="0,0,0,12" />
+            <Grid Margin="0,0,0,12" Visibility="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <CheckBox Content="{Binding DisplayLabel}" IsChecked="{Binding Value, Mode=TwoWay}" Foreground="#D4D4D4" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                    <Button Content="Default" Command="{Binding DataContext.SetDefaultCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,3,0" />
+                    <Button Content="Entfernen" Command="{Binding DataContext.RemoveParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" />
+                </StackPanel>
+            </Grid>
         </DataTemplate>
 
         <!-- Template für ISF "point2D" -> X/Y Slider -->
         <DataTemplate DataType="{x:Type isf:Point2DParameterVm}">
-            <Border BorderBrush="#333333" BorderThickness="1" Padding="8" Margin="0,0,0,12" CornerRadius="4">
-                <StackPanel>
-                    <TextBlock Text="{Binding DisplayLabel}" FontWeight="SemiBold" Margin="0,0,0,6" />
-                    <DockPanel>
-                        <TextBlock Text="X:" Width="20" />
-                        <TextBlock Text="{Binding X, StringFormat={}{0:F2}}" DockPanel.Dock="Right" Width="35" TextAlignment="Right" />
-                        <Slider Minimum="{Binding MinX}" Maximum="{Binding MaxX}" Value="{Binding X, Mode=TwoWay}" />
-                    </DockPanel>
-                    <DockPanel Margin="0,4,0,0">
-                        <TextBlock Text="Y:" Width="20" />
-                        <TextBlock Text="{Binding Y, StringFormat={}{0:F2}}" DockPanel.Dock="Right" Width="35" TextAlignment="Right" />
-                        <Slider Minimum="{Binding MinY}" Maximum="{Binding MaxY}" Value="{Binding Y, Mode=TwoWay}" />
-                    </DockPanel>
-                </StackPanel>
+            <Border BorderBrush="#333333" BorderThickness="1" Padding="8" Margin="0,0,0,12" CornerRadius="4" Visibility="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="{Binding DisplayLabel}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <DockPanel>
+                            <TextBlock Text="X:" Width="20" />
+                            <TextBlock Text="{Binding X, StringFormat={}{0:F2}}" DockPanel.Dock="Right" Width="35" TextAlignment="Right" />
+                            <Slider Minimum="{Binding MinX}" Maximum="{Binding MaxX}" Value="{Binding X, Mode=TwoWay}" />
+                        </DockPanel>
+                        <DockPanel Margin="0,4,0,0">
+                            <TextBlock Text="Y:" Width="20" />
+                            <TextBlock Text="{Binding Y, StringFormat={}{0:F2}}" DockPanel.Dock="Right" Width="35" TextAlignment="Right" />
+                            <Slider Minimum="{Binding MinY}" Maximum="{Binding MaxY}" Value="{Binding Y, Mode=TwoWay}" />
+                        </DockPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <Button Content="Default" Command="{Binding DataContext.SetDefaultCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" />
+                        <Button Content="Entfernen" Command="{Binding DataContext.RemoveParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" />
+                    </StackPanel>
+                </Grid>
             </Border>
         </DataTemplate>
 
         <!-- Template für ISF "color" -> RGBA Slider -->
         <DataTemplate DataType="{x:Type isf:ColorParameterVm}">
-            <Border BorderBrush="#333333" BorderThickness="1" Padding="8" Margin="0,0,0,12" CornerRadius="4">
-                <StackPanel>
-                    <TextBlock Text="{Binding DisplayLabel}" FontWeight="SemiBold" Margin="0,0,0,6" />
-                    <DockPanel>
-                        <TextBlock Text="R:" Width="20" Foreground="#F48771"/>
-                        <Slider Minimum="0" Maximum="1" Value="{Binding R, Mode=TwoWay}"/>
-                    </DockPanel>
-                    <DockPanel>
-                        <TextBlock Text="G:" Width="20" Foreground="#89D185"/>
-                        <Slider Minimum="0" Maximum="1" Value="{Binding G, Mode=TwoWay}"/>
-                    </DockPanel>
-                    <DockPanel>
-                        <TextBlock Text="B:" Width="20" Foreground="#569CD6"/>
-                        <Slider Minimum="0" Maximum="1" Value="{Binding B, Mode=TwoWay}"/>
-                    </DockPanel>
-                    <DockPanel>
-                        <TextBlock Text="A:" Width="20" Foreground="#CCCCCC"/>
-                        <Slider Minimum="0" Maximum="1" Value="{Binding A, Mode=TwoWay}"/>
-                    </DockPanel>
-                </StackPanel>
+            <Border BorderBrush="#333333" BorderThickness="1" Padding="8" Margin="0,0,0,12" CornerRadius="4" Visibility="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="{Binding DisplayLabel}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <DockPanel><TextBlock Text="R:" Width="20" Foreground="#F48771"/><Slider Minimum="0" Maximum="1" Value="{Binding R, Mode=TwoWay}"/></DockPanel>
+                        <DockPanel><TextBlock Text="G:" Width="20" Foreground="#89D185"/><Slider Minimum="0" Maximum="1" Value="{Binding G, Mode=TwoWay}"/></DockPanel>
+                        <DockPanel><TextBlock Text="B:" Width="20" Foreground="#569CD6"/><Slider Minimum="0" Maximum="1" Value="{Binding B, Mode=TwoWay}"/></DockPanel>
+                        <DockPanel><TextBlock Text="A:" Width="20" Foreground="#CCCCCC"/><Slider Minimum="0" Maximum="1" Value="{Binding A, Mode=TwoWay}"/></DockPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <Button Content="Default" Command="{Binding DataContext.SetDefaultCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" />
+                        <Button Content="Entfernen" Command="{Binding DataContext.RemoveParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" />
+                    </StackPanel>
+                </Grid>
             </Border>
         </DataTemplate>
     </Window.Resources>
