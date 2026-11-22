@@ -7,8 +7,10 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
+using ShaderEditor.Windows;
 
 namespace ShaderEditor.ViewModels;
 
@@ -104,6 +106,7 @@ void main() {
         OpenCommand = new RelayCommand(_ => OpenShader());
         SetDefaultCommand = new RelayCommand(parameter => SetParameterDefault(parameter as IsfParameterViewModel));
         RemoveParameterCommand = new RelayCommand(parameter => RemoveParameter(parameter as IsfParameterViewModel));
+        NewParameterCommand = new RelayCommand(_ => AddParameter());
         SelectFolderCommand = new RelayCommand(_ => SelectShaderFolder());
         SaveCommand = new RelayCommand(_ => SaveShader());
         SaveAsCommand = new RelayCommand(_ => SaveShaderAs());
@@ -148,6 +151,7 @@ void main() {
     public ICommand OpenCommand { get; }
     public ICommand SetDefaultCommand { get; }
     public ICommand RemoveParameterCommand { get; }
+    public ICommand NewParameterCommand { get; }
     public ICommand SelectFolderCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand SaveAsCommand { get; }
@@ -514,6 +518,46 @@ void main() {
         parameter.IsVisible = false;
         _hiddenParameters.Add(parameter);
         ErrorLog = $"Parameter entfernt, Uniform beibehalten: {parameter.DisplayLabel}";
+    }
+
+    private void AddParameter()
+    {
+        var dialog = new NewParameterDialog
+        {
+            Owner = Application.Current?.MainWindow
+        };
+        if (dialog.ShowDialog() != true || dialog.ParameterDefinition == null)
+        {
+            return;
+        }
+
+        var definition = dialog.ParameterDefinition;
+        var name = definition["NAME"]?.GetValue<string>();
+        if (string.IsNullOrWhiteSpace(name) || !Regex.IsMatch(name, @"^[A-Za-z_][A-Za-z0-9_]*$"))
+        {
+            ErrorLog = "Der Parametername muss ein gültiger GLSL-Bezeichner sein.";
+            return;
+        }
+
+        if (!TryUpdateIsfHeader(root =>
+            {
+                var inputs = GetInputs(root);
+                if (inputs.Any(input => string.Equals(
+                        input?["NAME"]?.GetValue<string>(), name, StringComparison.Ordinal)))
+                {
+                    ErrorLog = $"Der Parametername ist bereits vorhanden: {name}";
+                    return false;
+                }
+
+                inputs.Add(definition);
+                return true;
+            }))
+        {
+            return;
+        }
+
+        ReloadShader(EditorText);
+        ErrorLog = $"Parameter hinzugefügt: {name}";
     }
 
     private bool TryUpdateIsfHeader(Func<JsonObject, bool> update)

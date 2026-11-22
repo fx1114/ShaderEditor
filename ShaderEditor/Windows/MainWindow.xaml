@@ -209,7 +209,11 @@
                 <Border Grid.Row="2" Background="#252526" Padding="12">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
-                            <TextBlock Text="ISF PARAMETER" FontSize="12" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,12" />
+                            <DockPanel Margin="0,0,0,12">
+                                <Button DockPanel.Dock="Right" Content="Neu" Command="{Binding NewParameterCommand}"
+                                        Padding="10,3" Background="#2D2D30" Foreground="#D4D4D4" />
+                                <TextBlock Text="ISF PARAMETER" FontSize="12" FontWeight="Bold" Foreground="#888888" VerticalAlignment="Center" />
+                            </DockPanel>
                             <ItemsControl ItemsSource="{Binding Parameters}" />
                         </StackPanel>
                     </ScrollViewer>
