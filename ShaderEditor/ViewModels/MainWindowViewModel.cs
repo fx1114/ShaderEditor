@@ -16,6 +16,7 @@ namespace ShaderEditor.ViewModels;
 
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
+    private const int GpuGraphSampleCount = 100;
     private static readonly string SettingsFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "ShaderEditor",
@@ -81,6 +82,9 @@ void main() {
     private string _vertexEditorText = string.Empty;
     private string _fragmentHoverToken = string.Empty;
     private string _vertexHoverToken = string.Empty;
+    private string _hoverExpression = "2*sin(TIME)";
+    private double _gpuRenderTimeMicroseconds;
+    private TimeSpan _lastGpuTimeUiUpdate;
     private string _errorLog = string.Empty;
     private string _title = "Unbenannt.fs - ISF Shader Studio";
     private string? _processedShaderSource;
@@ -103,6 +107,7 @@ void main() {
         _renderer = renderer;
         Parameters = new ObservableCollection<IsfParameterViewModel>();
         ShaderFiles = new ObservableCollection<ShaderFileItem>();
+        GpuRenderTimes = new ObservableCollection<double>();
 
         NewCommand = new RelayCommand(_ => NewShader());
         OpenCommand = new RelayCommand(_ => OpenShader());
@@ -138,6 +143,33 @@ void main() {
             _debounceTimer.Stop();
             _debounceTimer.Start();
         }
+    }
+
+    public string HoverExpression
+    {
+        get => _hoverExpression;
+        set
+        {
+            if (!SetProperty(ref _hoverExpression, value))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(FragmentHoverToken))
+            {
+                ReloadShader(EditorText);
+            }
+            else if (!string.IsNullOrWhiteSpace(VertexHoverToken))
+            {
+                CompileRenderer(_renderer);
+            }
+        }
+    }
+
+    public double GpuRenderTimeMicroseconds
+    {
+        get => _gpuRenderTimeMicroseconds;
+        private set => SetProperty(ref _gpuRenderTimeMicroseconds, value);
     }
 
     public bool CreateVertexShader
@@ -176,6 +208,7 @@ void main() {
 
     public ObservableCollection<IsfParameterViewModel> Parameters { get; }
     public ObservableCollection<ShaderFileItem> ShaderFiles { get; }
+    public ObservableCollection<double> GpuRenderTimes { get; }
     public IShaderRenderer Renderer => _renderer;
     public ICommand NewCommand { get; }
     public ICommand OpenCommand { get; }
@@ -390,6 +423,37 @@ void main() {
     {
         EnsureRendererCurrent(renderer);
         renderer.Render(delta, _stopwatch.Elapsed, _frameIndex++, width, height, Parameters);
+
+        var now = _stopwatch.Elapsed;
+        if (_lastGpuTimeUiUpdate == TimeSpan.Zero ||
+            now - _lastGpuTimeUiUpdate >= TimeSpan.FromMilliseconds(10))
+        {
+            _lastGpuTimeUiUpdate = now;
+            AddGpuTimeSample(renderer.LastGpuTimeMicroseconds);
+        }
+    }
+
+    private void AddGpuTimeSample(double sample)
+    {
+        void Update()
+        {
+            GpuRenderTimeMicroseconds = sample;
+            GpuRenderTimes.Add(sample);
+            while (GpuRenderTimes.Count > GpuGraphSampleCount)
+            {
+                GpuRenderTimes.RemoveAt(0);
+            }
+        }
+
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.CheckAccess())
+        {
+            Update();
+        }
+        else
+        {
+            dispatcher.BeginInvoke(Update);
+        }
     }
 
     public void Dispose()
@@ -423,7 +487,7 @@ void main() {
     {
         var hiddenParameters = _hiddenParameters.ToArray();
         var parseResult = IsfParser.ParseAndTranspile(
-            ApplyHoveredLiteral(rawSource, _fragmentHoverToken));
+            ApplyHoveredLiteral(rawSource, _fragmentHoverToken, HoverExpression));
         if (parseResult.Error != null)
         {
             ErrorLog = parseResult.Error;
@@ -670,7 +734,7 @@ void main() {
         try
         {
             renderer.Compile(
-                ApplyHoveredLiteral(VertexEditorText, _vertexHoverToken),
+                ApplyHoveredLiteral(VertexEditorText, _vertexHoverToken, HoverExpression),
                 _processedShaderSource);
             _rendererRevisions[renderer] = _shaderRevision;
             ErrorLog = "ISF-Shader erfolgreich kompiliert.";
@@ -684,7 +748,7 @@ void main() {
         }
     }
 
-    private static string ApplyHoveredLiteral(string source, string hoverToken)
+    private static string ApplyHoveredLiteral(string source, string hoverToken, string expression)
     {
         var separator = hoverToken.IndexOf(':');
         if (separator <= 0 ||
@@ -695,7 +759,7 @@ void main() {
             return source;
         }
 
-        return source[..offset] + "2*sin(TIME)" + source[(offset + length)..];
+        return source[..offset] + expression + source[(offset + length)..];
     }
 
     private void NewShader()

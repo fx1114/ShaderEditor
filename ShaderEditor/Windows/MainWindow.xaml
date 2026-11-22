@@ -197,20 +197,28 @@
             
             <Grid Grid.Column="4">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="90" />
                     <RowDefinition Height="360" />
                     <RowDefinition Height="5" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- OpenGL Viewport -->
-                <glWpfControl:GLWpfControl Grid.Row="0" x:Name="OpenGlControl" />
+                <local:GpuTimeGraph Grid.Row="0" Samples="{Binding GpuRenderTimes}" />
 
-                <GridSplitter Grid.Row="1" Width="5" HorizontalAlignment="Stretch" Background="#333333" />
+                <!-- OpenGL Viewport -->
+                <glWpfControl:GLWpfControl Grid.Row="1" x:Name="OpenGlControl" />
+
+                <GridSplitter Grid.Row="2" Width="5" HorizontalAlignment="Stretch" Background="#333333" />
 
                 <!-- Dynamische ISF Parameter-Controls -->
-                <Border Grid.Row="2" Background="#252526" Padding="12">
+                <Border Grid.Row="3" Background="#252526" Padding="12">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
+                            <TextBlock Text="Hover-Ausdruck" Foreground="#D4D4D4" Margin="0,0,0,4" />
+                            <TextBox Text="{Binding HoverExpression, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="GLSL-Ausdruck, der während des Mouse-Hovers eingesetzt wird"
+                                     Background="#1E1E1E" Foreground="#D4D4D4" BorderBrush="#3F3F46"
+                                     Padding="5,3" Margin="0,0,0,12" />
                             <DockPanel Margin="0,0,0,12">
                                 <Button DockPanel.Dock="Right" Content="Neu" Command="{Binding NewParameterCommand}"
                                         Padding="10,3" Background="#2D2D30" Foreground="#D4D4D4" />

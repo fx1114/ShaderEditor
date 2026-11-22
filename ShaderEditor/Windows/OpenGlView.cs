@@ -9,8 +9,11 @@ namespace ShaderEditor.Windows
     public sealed class OpenGlView : IShaderRenderer
     {
         private int _vao;
+        private int _timerQuery;
         private int _shaderProgram = 0;
         private bool _initialized;
+
+        public double LastGpuTimeMicroseconds { get; private set; }
 
         public void Initialize()
         {
@@ -24,6 +27,7 @@ namespace ShaderEditor.Windows
                 -1f,  1f,   1f, -1f,   1f,  1f
             };
             _vao = GL.GenVertexArray();
+            _timerQuery = GL.GenQuery();
             int vbo = GL.GenBuffer();
             GL.BindVertexArray(_vao);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
@@ -73,6 +77,13 @@ namespace ShaderEditor.Windows
             GL.Clear(ClearBufferMask.ColorBufferBit);
             if (_shaderProgram == 0) return;
 
+            GL.GetQueryObject(_timerQuery, GetQueryObjectParam.QueryResultAvailable, out int resultAvailable);
+            if (resultAvailable != 0)
+            {
+                GL.GetQueryObject(_timerQuery, GetQueryObjectParam.QueryResult, out long elapsedNanoseconds);
+                LastGpuTimeMicroseconds = elapsedNanoseconds / 1000.0;
+            }
+
             /*
             int width = OpenGlControl.FrameBufferWidth;
             int height = OpenGlControl.FrameBufferHeight;
@@ -112,7 +123,9 @@ namespace ShaderEditor.Windows
             }
 
             GL.BindVertexArray(_vao);
+            GL.BeginQuery(QueryTarget.TimeElapsed, _timerQuery);
             GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
+            GL.EndQuery(QueryTarget.TimeElapsed);
         }
     }
 }
