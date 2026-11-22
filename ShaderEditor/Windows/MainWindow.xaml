@@ -173,9 +173,9 @@
                     <TabItem Background="#2D2D30" Foreground="#D4D4D4">
                         <TabItem.Header>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Vertex-Shader" VerticalAlignment="Center" />
-                                <CheckBox Content="VS erstellen" IsChecked="{Binding CreateVertexShader, Mode=TwoWay}"
+                                <CheckBox IsChecked="{Binding CreateVertexShader, Mode=TwoWay}" 
                                           Foreground="#D4D4D4" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                <TextBlock Text="Vertex-Shader" VerticalAlignment="Center" />
                             </StackPanel>
                         </TabItem.Header>
                         <avalonedit:TextEditor behaviors:AvalonEditBehavior.IsEnabled="True"
