@@ -165,6 +165,7 @@
                 <TabControl Grid.Row="0" Background="#1E1E1E" Foreground="#D4D4D4">
                     <TabItem Header="Fragment-Shader" Background="#2D2D30" Foreground="#D4D4D4">
                         <avalonedit:TextEditor behaviors:AvalonEditBehavior.IsEnabled="True"
+                                               behaviors:AvalonEditBehavior.HoverToken="{Binding FragmentHoverToken, Mode=TwoWay}"
                                                behaviors:AvalonEditBehavior.Text="{Binding EditorText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                FontFamily="Consolas" FontSize="13"
                                                Background="#1E1E1E" Foreground="#D4D4D4"
@@ -179,6 +180,7 @@
                             </StackPanel>
                         </TabItem.Header>
                         <avalonedit:TextEditor behaviors:AvalonEditBehavior.IsEnabled="True"
+                                               behaviors:AvalonEditBehavior.HoverToken="{Binding VertexHoverToken, Mode=TwoWay}"
                                                behaviors:AvalonEditBehavior.Text="{Binding VertexEditorText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                FontFamily="Consolas" FontSize="13"
                                                Background="#1E1E1E" Foreground="#D4D4D4"

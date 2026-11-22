@@ -2,6 +2,7 @@ using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
+using System.Text.RegularExpressions;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
@@ -11,6 +12,10 @@ namespace ShaderEditor.Behaviors;
 
 public static class AvalonEditBehavior
 {
+    private static readonly Regex NumberLiteralRegex = new(
+        @"(?<![A-Za-z0-9_])(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?[fF]?(?![A-Za-z0-9_])",
+        RegexOptions.Compiled);
+
     public static readonly DependencyProperty IsEnabledProperty =
         DependencyProperty.RegisterAttached(
             "IsEnabled",
@@ -27,6 +32,14 @@ public static class AvalonEditBehavior
                 FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
                 OnTextChanged));
 
+    public static readonly DependencyProperty HoverTokenProperty =
+        DependencyProperty.RegisterAttached(
+            "HoverToken",
+            typeof(string),
+            typeof(AvalonEditBehavior),
+            new FrameworkPropertyMetadata(string.Empty,
+                FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+
     public static bool GetIsEnabled(DependencyObject element)
         => (bool)element.GetValue(IsEnabledProperty);
 
@@ -39,6 +52,12 @@ public static class AvalonEditBehavior
     public static void SetText(DependencyObject element, string value)
         => element.SetValue(TextProperty, value);
 
+    public static string GetHoverToken(DependencyObject element)
+        => (string)element.GetValue(HoverTokenProperty);
+
+    public static void SetHoverToken(DependencyObject element, string value)
+        => element.SetValue(HoverTokenProperty, value);
+
     private static void OnIsEnabledChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
     {
         if (dependencyObject is not TextEditor editor)
@@ -50,11 +69,15 @@ public static class AvalonEditBehavior
         {
             editor.TextChanged += Editor_TextChanged;
             editor.Loaded += Editor_Loaded;
+            editor.MouseMove += Editor_MouseMove;
+            editor.MouseLeave += Editor_MouseLeave;
         }
         else
         {
             editor.TextChanged -= Editor_TextChanged;
             editor.Loaded -= Editor_Loaded;
+            editor.MouseMove -= Editor_MouseMove;
+            editor.MouseLeave -= Editor_MouseLeave;
         }
     }
 
@@ -63,6 +86,46 @@ public static class AvalonEditBehavior
         if (dependencyObject is TextEditor editor && e.NewValue is string text && editor.Text != text)
         {
             editor.Text = text;
+        }
+    }
+
+    private static void Editor_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is not TextEditor editor || editor.Document == null)
+        {
+            return;
+        }
+
+        var position = editor.GetPositionFromPoint(e.GetPosition(editor));
+        if (position == null)
+        {
+            SetCurrentHoverToken(editor, string.Empty);
+            return;
+        }
+
+        var offset = editor.Document.GetOffset(position.Value.Location);
+        var match = NumberLiteralRegex.Matches(editor.Document.Text)
+            .Cast<Match>()
+            .FirstOrDefault(candidate => candidate.Index <= offset && offset < candidate.Index + candidate.Length);
+
+        SetCurrentHoverToken(editor, match == null
+            ? string.Empty
+            : $"{match.Index}:{match.Length}");
+    }
+
+    private static void Editor_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is TextEditor editor)
+        {
+            SetCurrentHoverToken(editor, string.Empty);
+        }
+    }
+
+    private static void SetCurrentHoverToken(TextEditor editor, string token)
+    {
+        if (!string.Equals(GetHoverToken(editor), token, StringComparison.Ordinal))
+        {
+            editor.SetCurrentValue(HoverTokenProperty, token);
         }
     }
 

@@ -79,6 +79,8 @@ void main() {
     private ShaderFileItem? _selectedShader;
     private string _editorText = string.Empty;
     private string _vertexEditorText = string.Empty;
+    private string _fragmentHoverToken = string.Empty;
+    private string _vertexHoverToken = string.Empty;
     private string _errorLog = string.Empty;
     private string _title = "Unbenannt.fs - ISF Shader Studio";
     private string? _processedShaderSource;
@@ -142,6 +144,34 @@ void main() {
     {
         get => _createVertexShader;
         set => SetProperty(ref _createVertexShader, value);
+    }
+
+    public string FragmentHoverToken
+    {
+        get => _fragmentHoverToken;
+        set
+        {
+            if (!SetProperty(ref _fragmentHoverToken, value))
+            {
+                return;
+            }
+
+            ReloadShader(EditorText);
+        }
+    }
+
+    public string VertexHoverToken
+    {
+        get => _vertexHoverToken;
+        set
+        {
+            if (!SetProperty(ref _vertexHoverToken, value))
+            {
+                return;
+            }
+
+            CompileRenderer(_renderer);
+        }
     }
 
     public ObservableCollection<IsfParameterViewModel> Parameters { get; }
@@ -392,7 +422,8 @@ void main() {
     private void ReloadShader(string rawSource, IShaderRenderer renderer)
     {
         var hiddenParameters = _hiddenParameters.ToArray();
-        var parseResult = IsfParser.ParseAndTranspile(rawSource);
+        var parseResult = IsfParser.ParseAndTranspile(
+            ApplyHoveredLiteral(rawSource, _fragmentHoverToken));
         if (parseResult.Error != null)
         {
             ErrorLog = parseResult.Error;
@@ -638,7 +669,9 @@ void main() {
 
         try
         {
-            renderer.Compile(VertexEditorText, _processedShaderSource);
+            renderer.Compile(
+                ApplyHoveredLiteral(VertexEditorText, _vertexHoverToken),
+                _processedShaderSource);
             _rendererRevisions[renderer] = _shaderRevision;
             ErrorLog = "ISF-Shader erfolgreich kompiliert.";
         }
@@ -649,6 +682,20 @@ void main() {
             _rendererRevisions[renderer] = _shaderRevision;
             ErrorLog = $"Fehler beim Kompilieren des Shaders:\n{ex.Message}";
         }
+    }
+
+    private static string ApplyHoveredLiteral(string source, string hoverToken)
+    {
+        var separator = hoverToken.IndexOf(':');
+        if (separator <= 0 ||
+            !int.TryParse(hoverToken[..separator], out var offset) ||
+            !int.TryParse(hoverToken[(separator + 1)..], out var length) ||
+            offset < 0 || length <= 0 || offset + length > source.Length)
+        {
+            return source;
+        }
+
+        return source[..offset] + "2*sin(TIME)" + source[(offset + length)..];
     }
 
     private void NewShader()
