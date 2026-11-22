@@ -58,18 +58,6 @@ public static class AvalonEditBehavior
         }
     }
 
-    /*
-    private static void TextArea_OnSelectionChanged(object? sender, EventArgs e)
-    {
-        Selection? selection = (sender as TextArea)?.Selection;
-        if (selection != null)
-        {
-            MessageBox.Show("Selection changed\n Start line: " + selection.StartPosition.Line + " column: " + selection.StartPosition.Column
-                + "\n End line: " + selection.EndPosition.Line + " column: " + selection.EndPosition.Column);
-        }
-    }
-    */
-
     private static void OnTextChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
     {
         if (dependencyObject is TextEditor editor && e.NewValue is string text && editor.Text != text)

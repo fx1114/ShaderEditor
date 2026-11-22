@@ -14,6 +14,11 @@ namespace ShaderEditor.ViewModels;
 
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
+    private static readonly string SettingsFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ShaderEditor",
+        "settings.json");
+
     private const string DefaultVertexShaderSource = @"#version 330 core
 layout (location = 0) in vec2 aPos;
 void main() {
@@ -79,6 +84,7 @@ void main() {
     private readonly Dictionary<IShaderRenderer, int> _rendererRevisions = new();
     private readonly List<IsfParameterViewModel> _hiddenParameters = new();
     private bool _isDirty;
+    private bool _createVertexShader = true;
     private int _frameIndex;
 
     public MainWindowViewModel(
@@ -108,6 +114,7 @@ void main() {
         _debounceTimer.Tick += DebounceTimer_Tick;
 
         SetInitialText(SampleIsfShader, DefaultVertexShaderSource);
+        LoadSettings();
         _stopwatch.Start();
     }
 
@@ -126,6 +133,12 @@ void main() {
             _debounceTimer.Stop();
             _debounceTimer.Start();
         }
+    }
+
+    public bool CreateVertexShader
+    {
+        get => _createVertexShader;
+        set => SetProperty(ref _createVertexShader, value);
     }
 
     public ObservableCollection<IsfParameterViewModel> Parameters { get; }
@@ -200,6 +213,44 @@ void main() {
         if (path != null)
         {
             ShaderFolderPath = path;
+            SaveSettings();
+        }
+    }
+
+    private void LoadSettings()
+    {
+        try
+        {
+            if (!File.Exists(SettingsFilePath))
+            {
+                return;
+            }
+
+            var settings = JsonSerializer.Deserialize<UserSettings>(
+                File.ReadAllText(SettingsFilePath));
+            if (!string.IsNullOrWhiteSpace(settings?.ShaderFolderPath) &&
+                Directory.Exists(settings.ShaderFolderPath))
+            {
+                ShaderFolderPath = settings.ShaderFolderPath;
+            }
+        }
+        catch
+        {
+            // Beschädigte oder nicht lesbare Einstellungen werden ignoriert.
+        }
+    }
+
+    private void SaveSettings()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(SettingsFilePath)!);
+            var settings = new UserSettings { ShaderFolderPath = ShaderFolderPath };
+            File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(settings));
+        }
+        catch
+        {
+            // Die Anwendung bleibt auch ohne persistente Einstellungen funktionsfähig.
         }
     }
 
@@ -607,7 +658,10 @@ void main() {
         try
         {
             _fileService.WriteAllText(path, EditorText);
-            _fileService.WriteAllText(Path.ChangeExtension(path, ".vs"), VertexEditorText);
+            if (CreateVertexShader)
+            {
+                _fileService.WriteAllText(Path.ChangeExtension(path, ".vs"), VertexEditorText);
+            }
             _currentFilePath = path;
             IsDirty = false;
             UpdateWindowTitle();
@@ -640,6 +694,11 @@ void main() {
             : System.IO.Path.GetFileName(_currentFilePath);
         Title = $"{fileName}{(IsDirty ? "*" : string.Empty)} - ISF Shader Studio";
     }
+}
+
+file sealed class UserSettings
+{
+    public string? ShaderFolderPath { get; set; }
 }
 
 public sealed class ShaderFileItem
