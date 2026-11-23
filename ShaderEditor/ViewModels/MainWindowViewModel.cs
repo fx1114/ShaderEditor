@@ -512,10 +512,10 @@ void main() {
                     newPoint.Y = Math.Clamp(oldPoint.Y, newPoint.MinY, newPoint.MaxY);
                     break;
                 case (ColorParameterVm oldColor, ColorParameterVm newColor):
-                    newColor.R = oldColor.R;
-                    newColor.G = oldColor.G;
-                    newColor.B = oldColor.B;
-                    newColor.A = oldColor.A;
+                    newColor.R = Math.Clamp(oldColor.R, newColor.MinR, newColor.MaxR);
+                    newColor.G = Math.Clamp(oldColor.G, newColor.MinG, newColor.MaxG);
+                    newColor.B = Math.Clamp(oldColor.B, newColor.MinB, newColor.MaxB);
+                    newColor.A = Math.Clamp(oldColor.A, newColor.MinA, newColor.MaxA);
                     break;
             }
         }

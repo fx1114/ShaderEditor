@@ -35,7 +35,8 @@ namespace ShaderEditor.Isf
                     metadata = JsonSerializer.Deserialize<IsfMetadata>(jsonText, new JsonSerializerOptions
                     {
                         AllowTrailingCommas = true,
-                        ReadCommentHandling = JsonCommentHandling.Skip
+                        ReadCommentHandling = JsonCommentHandling.Skip,
+                        PropertyNameCaseInsensitive = true
                     });
                 }
                 catch (Exception ex)
@@ -108,14 +109,24 @@ namespace ShaderEditor.Isf
                         case "color":
                             sb.AppendLine($"uniform vec4 {input.Name};");
                             var defCol = GetFloatArray(input.Default, new[] { 1f, 1f, 1f, 1f });
+                            var minCol = GetFloatArray(input.Min, new[] { 0f, 0f, 0f, 0f });
+                            var maxCol = GetFloatArray(input.Max, new[] { 1f, 1f, 1f, 1f });
                             parameters.Add(new ColorParameterVm
                             {
                                 Name = input.Name,
                                 DisplayLabel = label,
-                                R = defCol.Length > 0 ? defCol[0] : 1f,
-                                G = defCol.Length > 1 ? defCol[1] : 1f,
-                                B = defCol.Length > 2 ? defCol[2] : 1f,
-                                A = defCol.Length > 3 ? defCol[3] : 1f
+                                R = GetArrayValue(defCol, 0, 1f),
+                                G = GetArrayValue(defCol, 1, 1f),
+                                B = GetArrayValue(defCol, 2, 1f),
+                                A = GetArrayValue(defCol, 3, 1f),
+                                MinR = GetArrayValue(minCol, 0, 0f),
+                                MaxR = GetArrayValue(maxCol, 0, 1f),
+                                MinG = GetArrayValue(minCol, 1, 0f),
+                                MaxG = GetArrayValue(maxCol, 1, 1f),
+                                MinB = GetArrayValue(minCol, 2, 0f),
+                                MaxB = GetArrayValue(maxCol, 2, 1f),
+                                MinA = GetArrayValue(minCol, 3, 0f),
+                                MaxA = GetArrayValue(maxCol, 3, 1f)
                             });
                             break;
                     }
@@ -146,5 +157,8 @@ namespace ShaderEditor.Isf
             }
             return list.Count >= 2 ? list.ToArray() : fallback;
         }
+
+        private static float GetArrayValue(float[] values, int index, float fallback)
+            => index < values.Length ? values[index] : fallback;
     }
 }

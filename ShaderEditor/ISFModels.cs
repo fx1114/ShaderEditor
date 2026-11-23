@@ -100,6 +100,14 @@ using System.Text.Json.Serialization;
         public float G { get => _g; set { _g = value; OnPropertyChanged(); } }
         public float B { get => _b; set { _b = value; OnPropertyChanged(); } }
         public float A { get => _a; set { _a = value; OnPropertyChanged(); } }
+        public float MinR { get; init; } = 0f;
+        public float MaxR { get; init; } = 1f;
+        public float MinG { get; init; } = 0f;
+        public float MaxG { get; init; } = 1f;
+        public float MinB { get; init; } = 0f;
+        public float MaxB { get; init; } = 1f;
+        public float MinA { get; init; } = 0f;
+        public float MaxA { get; init; } = 1f;
         public override string ToString() => $"({R:0.###}, {G:0.###}, {B:0.###}, {A:0.###})";
     }
 }
