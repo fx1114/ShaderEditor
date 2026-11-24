@@ -90,7 +90,7 @@ using System.Text.Json.Serialization;
         public float MaxX { get; init; } = 1f;
         public float MinY { get; init; } = 0f;
         public float MaxY { get; init; } = 1f;
-        public override string ToString() => $"({X:0.###}, {Y:0.###})";
+        public override string ToString() => FormattableString.Invariant($"({X:0.###}, {Y:0.###})");
     }
 
     public class ColorParameterVm : IsfParameterViewModel
@@ -108,6 +108,6 @@ using System.Text.Json.Serialization;
         public float MaxB { get; init; } = 1f;
         public float MinA { get; init; } = 0f;
         public float MaxA { get; init; } = 1f;
-        public override string ToString() => $"({R:0.###}, {G:0.###}, {B:0.###}, {A:0.###})";
+        public override string ToString() => FormattableString.Invariant($"vec4({R:0.###}, {G:0.###}, {B:0.###}, {A:0.###})");
     }
 }
