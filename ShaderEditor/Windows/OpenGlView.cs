@@ -47,20 +47,41 @@ namespace ShaderEditor.Windows
             GL.ShaderSource(fs, fragmentSource);
             GL.CompileShader(fs);
 
-            GL.GetShader(fs, ShaderParameter.CompileStatus, out int success);
-            if (success == 0)
+            var errors = new List<string>();
+
+            GL.GetShader(vs, ShaderParameter.CompileStatus, out int vertexSuccess);
+            if (vertexSuccess == 0)
             {
-                //ErrorLog.Text = GL.GetShaderInfoLog(fs);
+                errors.Add($"Vertex-Shader-Kompilierung fehlgeschlagen:\n{GL.GetShaderInfoLog(vs)}");
+            }
+
+            GL.GetShader(fs, ShaderParameter.CompileStatus, out int fragmentSuccess);
+            if (fragmentSuccess == 0)
+            {
+                errors.Add($"Fragment-Shader-Kompilierung fehlgeschlagen:\n{GL.GetShaderInfoLog(fs)}");
+            }
+
+            if (errors.Count > 0)
+            {
                 GL.DeleteShader(vs);
                 GL.DeleteShader(fs);
-                //return;
-                throw new Exception("Shader compilation failed: " + GL.GetShaderInfoLog(fs));
+                throw new Exception(string.Join("\n\n", errors));
             }
 
             int newProgram = GL.CreateProgram();
             GL.AttachShader(newProgram, vs);
             GL.AttachShader(newProgram, fs);
             GL.LinkProgram(newProgram);
+
+            GL.GetProgram(newProgram, GetProgramParameterName.LinkStatus, out int linkSuccess);
+            if (linkSuccess == 0)
+            {
+                var linkError = GL.GetProgramInfoLog(newProgram);
+                GL.DeleteProgram(newProgram);
+                GL.DeleteShader(vs);
+                GL.DeleteShader(fs);
+                throw new Exception($"Shader-Linking fehlgeschlagen:\n{linkError}");
+            }
 
             GL.DeleteShader(vs);
             GL.DeleteShader(fs);
