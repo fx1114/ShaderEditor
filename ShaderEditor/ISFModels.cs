@@ -20,6 +20,24 @@ using System.Text.Json.Serialization;
 
         [JsonPropertyName("INPUTS")]
         public List<IsfInputDefinition> Inputs { get; set; } = new();
+
+        [JsonPropertyName("PASSES")]
+        public List<IsfPassDefinition> Passes { get; set; } = new();
+    }
+
+    public class IsfPassDefinition
+    {
+        [JsonPropertyName("TARGET")]
+        public string? Target { get; set; }
+
+        [JsonPropertyName("PERSISTENT")]
+        public bool Persistent { get; set; }
+
+        [JsonPropertyName("WIDTH")]
+        public JsonElement? Width { get; set; }
+
+        [JsonPropertyName("HEIGHT")]
+        public JsonElement? Height { get; set; }
     }
 
     public class IsfInputDefinition

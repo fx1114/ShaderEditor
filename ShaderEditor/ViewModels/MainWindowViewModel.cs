@@ -22,26 +22,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         "ShaderEditor",
         "settings.json");
 
-    private const string DefaultVertexShaderSource = @"#version 330 core
-layout (location = 0) in vec2 aPos;
+    private const string DefaultVertexShaderSource = @"
 void main() {
-    float deg = 0.0;
-    float rad = deg * 3.14159265359 / 180;
-
-    vec2 trans = vec2(0.0, 0.0);
-    vec2 scale = vec2(1.0, 1.0);
-    vec2 scissor = vec2(0.0, 0.0);
-
-    mat2 rotMat = mat2(cos(rad), -sin(rad), sin(rad), cos(rad));
-    mat2 scaleMat = mat2(scale.x, 0.0, 0.0, scale.y);
-    mat2 scissorMat = mat2(1.0, scissor.y, scissor.x, 1.0);
-
-    vec2 pos = vec2(aPos.x, aPos.y) + trans;
-    pos = rotMat * pos;
-    pos = scale * pos;
-    pos = scissorMat * pos;
-
-    gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);
+    isf_vertShaderInit();
 }";
 
     private const string SampleIsfShader = @"/*{
@@ -88,6 +71,8 @@ void main() {
     private string _errorLog = string.Empty;
     private string _title = "Unbenannt.fs - ISF Shader Studio";
     private string? _processedShaderSource;
+    private string _vertexShaderHeader = string.Empty;
+    private IReadOnlyList<IsfPassDefinition> _passes = Array.Empty<IsfPassDefinition>();
     private int _shaderRevision;
     private readonly Dictionary<IShaderRenderer, int> _rendererRevisions = new();
     private readonly List<IsfParameterViewModel> _hiddenParameters = new();
@@ -537,6 +522,8 @@ void main() {
         }
 
         _processedShaderSource = parseResult.ProcessedGlslCode;
+        _vertexShaderHeader = parseResult.VertexShaderHeader;
+        _passes = parseResult.Passes;
         _shaderRevision++;
         CompileRenderer(renderer);
     }
@@ -735,8 +722,11 @@ void main() {
         try
         {
             renderer.Compile(
-                ApplyHoveredLiteral(VertexEditorText, _vertexHoverToken, HoverExpression),
-                _processedShaderSource);
+                BuildVertexShaderSource(
+                    _vertexShaderHeader,
+                    ApplyHoveredLiteral(VertexEditorText, _vertexHoverToken, HoverExpression)),
+                _processedShaderSource,
+                _passes);
             _rendererRevisions[renderer] = _shaderRevision;
             ErrorLog = "ISF-Shader erfolgreich kompiliert.";
         }
@@ -761,6 +751,17 @@ void main() {
         }
 
         return source[..offset] + expression + source[(offset + length)..];
+    }
+
+    private static string BuildVertexShaderSource(string header, string source)
+    {
+        var sourceWithoutVersion = Regex.Replace(
+            source,
+            @"^[ \t]*#version[^\r\n]*(?:\r?\n|$)",
+            string.Empty,
+            RegexOptions.Multiline);
+
+        return header + sourceWithoutVersion;
     }
 
     private void NewShader()

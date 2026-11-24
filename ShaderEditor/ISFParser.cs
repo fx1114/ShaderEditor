@@ -9,7 +9,9 @@ namespace ShaderEditor.Isf
     public class IsfParseResult
     {
         public string ProcessedGlslCode { get; init; } = string.Empty;
+        public string VertexShaderHeader { get; init; } = string.Empty;
         public List<IsfParameterViewModel> Parameters { get; init; } = new();
+        public List<IsfPassDefinition> Passes { get; init; } = new();
         public string? Error { get; init; }
     }
 
@@ -47,15 +49,31 @@ namespace ShaderEditor.Isf
 
             // GLSL Header zusammenbauen (Kompatibilitätsschicht für ISF -> GLSL 3.30 Core)
             var sb = new StringBuilder();
+            var vertexHeader = new StringBuilder();
             sb.AppendLine("#version 330 core");
             sb.AppendLine("out vec4 _isf_FragColor;");
             sb.AppendLine("#define gl_FragColor _isf_FragColor");
             sb.AppendLine("uniform float TIME;");
             sb.AppendLine("uniform float TIMEDELTA;");
             sb.AppendLine("uniform int FRAMEINDEX;");
+            sb.AppendLine("uniform int PASSINDEX;");
+            sb.AppendLine("uniform vec4 DATE;");
             sb.AppendLine("uniform vec2 RENDERSIZE;");
             sb.AppendLine("#define isf_FragNormCoord (gl_FragCoord.xy / RENDERSIZE.xy)");
             sb.AppendLine();
+
+            vertexHeader.AppendLine("#version 330 core");
+            vertexHeader.AppendLine("layout (location = 0) in vec2 aPos;");
+            vertexHeader.AppendLine("uniform float TIME;");
+            vertexHeader.AppendLine("uniform float TIMEDELTA;");
+            vertexHeader.AppendLine("uniform int FRAMEINDEX;");
+            vertexHeader.AppendLine("uniform int PASSINDEX;");
+            vertexHeader.AppendLine("uniform vec4 DATE;");
+            vertexHeader.AppendLine("uniform vec2 RENDERSIZE;");
+            vertexHeader.AppendLine("void isf_vertShaderInit() {" +
+                "   gl_Position = vec4(aPos.x, aPos.y, 1.0, 1.0);" +
+                "}");
+            vertexHeader.AppendLine();
 
             if (metadata?.Inputs != null)
             {
@@ -67,6 +85,7 @@ namespace ShaderEditor.Isf
                     {
                         case "float":
                             sb.AppendLine($"uniform float {input.Name};");
+                            vertexHeader.AppendLine($"uniform float {input.Name};");
                             parameters.Add(new FloatParameterVm
                             {
                                 Name = input.Name,
@@ -80,6 +99,7 @@ namespace ShaderEditor.Isf
                         case "bool":
                         case "event":
                             sb.AppendLine($"uniform bool {input.Name};");
+                            vertexHeader.AppendLine($"uniform bool {input.Name};");
                             parameters.Add(new BoolParameterVm
                             {
                                 Name = input.Name,
@@ -90,6 +110,7 @@ namespace ShaderEditor.Isf
 
                         case "point2d":
                             sb.AppendLine($"uniform vec2 {input.Name};");
+                            vertexHeader.AppendLine($"uniform vec2 {input.Name};");
                             var defPt = GetFloatArray(input.Default, new[] { 0.5f, 0.5f });
                             var minPt = GetFloatArray(input.Min, new[] { 0.0f, 0.0f });
                             var maxPt = GetFloatArray(input.Max, new[] { 1.0f, 1.0f });
@@ -108,6 +129,7 @@ namespace ShaderEditor.Isf
 
                         case "color":
                             sb.AppendLine($"uniform vec4 {input.Name};");
+                            vertexHeader.AppendLine($"uniform vec4 {input.Name};");
                             var defCol = GetFloatArray(input.Default, new[] { 1f, 1f, 1f, 1f });
                             var minCol = GetFloatArray(input.Min, new[] { 0f, 0f, 0f, 0f });
                             var maxCol = GetFloatArray(input.Max, new[] { 1f, 1f, 1f, 1f });
@@ -131,6 +153,21 @@ namespace ShaderEditor.Isf
                             break;
                     }
                 }
+
+            if (metadata?.Passes != null)
+            {
+                foreach (var pass in metadata.Passes)
+                {
+                    if (string.IsNullOrWhiteSpace(pass.Target) ||
+                        !Regex.IsMatch(pass.Target, @"^[A-Za-z_][A-Za-z0-9_]*$"))
+                    {
+                        continue;
+                    }
+
+                    sb.AppendLine($"uniform sampler2D {pass.Target};");
+                    vertexHeader.AppendLine($"uniform sampler2D {pass.Target};");
+                }
+            }
             }
 
             // Falls der User manuell #version geschrieben hat, entfernen wir es, da wir es oben injizieren
@@ -140,7 +177,9 @@ namespace ShaderEditor.Isf
             return new IsfParseResult
             {
                 ProcessedGlslCode = sb.ToString(),
-                Parameters = parameters
+                VertexShaderHeader = vertexHeader.ToString(),
+                Parameters = parameters,
+                Passes = metadata?.Passes ?? new List<IsfPassDefinition>()
             };
         }
 
