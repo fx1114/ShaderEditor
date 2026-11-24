@@ -92,7 +92,7 @@ void main() {
     private readonly Dictionary<IShaderRenderer, int> _rendererRevisions = new();
     private readonly List<IsfParameterViewModel> _hiddenParameters = new();
     private bool _isDirty;
-    private bool _createVertexShader = true;
+    private bool _createVertexShader;
     private int _frameIndex;
 
     public MainWindowViewModel(
@@ -365,7 +365,8 @@ void main() {
         {
             _currentFilePath = path;
             var vertexPath = Path.ChangeExtension(path, ".vs");
-            var vertexSource = File.Exists(vertexPath)
+            CreateVertexShader = File.Exists(vertexPath);
+            var vertexSource = CreateVertexShader
                 ? _fileService.ReadAllText(vertexPath)
                 : DefaultVertexShaderSource;
             SetInitialText(_fileService.ReadAllText(path), vertexSource);
@@ -766,6 +767,8 @@ void main() {
     {
         if (!ConfirmDiscardChanges()) return;
         _currentFilePath = null;
+        SelectedShader = null;
+        CreateVertexShader = false;
         SetInitialText(SampleIsfShader, DefaultVertexShaderSource);
         ReloadShader(EditorText);
     }
@@ -780,7 +783,8 @@ void main() {
         {
             _currentFilePath = path;
             var vertexPath = Path.ChangeExtension(path, ".vs");
-            var vertexSource = File.Exists(vertexPath)
+            CreateVertexShader = File.Exists(vertexPath);
+            var vertexSource = CreateVertexShader
                 ? _fileService.ReadAllText(vertexPath)
                 : DefaultVertexShaderSource;
             SetInitialText(_fileService.ReadAllText(path), vertexSource);
@@ -818,6 +822,7 @@ void main() {
                 _fileService.WriteAllText(Path.ChangeExtension(path, ".vs"), VertexEditorText);
             }
             _currentFilePath = path;
+            RefreshShaderFiles();
             IsDirty = false;
             UpdateWindowTitle();
             ErrorLog = $"Gespeichert: {path}";
