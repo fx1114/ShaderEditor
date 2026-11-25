@@ -95,8 +95,9 @@ namespace ShaderEditor.Windows
 
             if (_shaderProgram != 0) GL.DeleteProgram(_shaderProgram);
             _shaderProgram = newProgram;
-            _passes = passes;
-            DeletePassTargets();
+            //_passes = passes;
+            //DeletePassTargets();
+
             //ErrorLog.Text = "ISF-Shader erfolgreich kompiliert.";
             //return _shaderProgram;
             return;
@@ -106,7 +107,7 @@ namespace ShaderEditor.Windows
         {
             if (_shaderProgram == 0) return;
 
-            EnsurePassTargets((int)width, (int)height);
+            //EnsurePassTargets((int)width, (int)height);
 
             GL.GetQueryObject(_timerQuery, GetQueryObjectParam.QueryResultAvailable, out int resultAvailable);
             if (resultAvailable != 0)
@@ -114,10 +115,8 @@ namespace ShaderEditor.Windows
                 GL.GetQueryObject(_timerQuery, GetQueryObjectParam.QueryResult, out long elapsedNanoseconds);
                 LastGpuTimeMicroseconds = elapsedNanoseconds / 1000.0;
             }
-
-            var passes = _passes.Count == 0
-                ? new[] { new IsfPassDefinition() }
-                : _passes;
+            /*
+            var passes = GetRenderPasses();
 
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             GL.Viewport(0, 0, (int)width, (int)height);
@@ -134,13 +133,24 @@ namespace ShaderEditor.Windows
                 var passHeight = target?.Height ?? (int)height;
 
                 GL.BindFramebuffer(FramebufferTarget.Framebuffer, target?.Framebuffer ?? 0);
+                if (target == null)
+                {
+                    GL.DrawBuffer(DrawBufferMode.Back);
+                }
                 GL.Viewport(0, 0, passWidth, passHeight);
                 if (target == null || !pass.Persistent)
                 {
                     GL.Clear(ClearBufferMask.ColorBufferBit);
                 }
-
+            */
                 GL.UseProgram(_shaderProgram);
+                SetUniforms(delta, elapsed, frameIndex, 0, (int)width, (int)height, activeParameters);
+
+                GL.BindVertexArray(_vao);
+                GL.BeginQuery(QueryTarget.TimeElapsed, _timerQuery);
+                GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
+                GL.EndQuery(QueryTarget.TimeElapsed);
+            /*
                 SetUniforms(delta, elapsed, frameIndex, passIndex, passWidth, passHeight, activeParameters);
                 BindPassTextures();
 
@@ -149,6 +159,7 @@ namespace ShaderEditor.Windows
                 GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
                 GL.EndQuery(QueryTarget.TimeElapsed);
             }
+            
 
             var lastPass = passes[^1];
             if (!string.IsNullOrWhiteSpace(lastPass.Target) &&
@@ -163,6 +174,13 @@ namespace ShaderEditor.Windows
                     BlitFramebufferFilter.Linear);
                 GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             }
+            */
+            /*
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            GL.DrawBuffer(DrawBufferMode.Back);
+            GL.Viewport(0, 0, (int)width, (int)height);
+            GL.Flush();
+            */
         }
 
         private void SetUniforms(
@@ -209,6 +227,20 @@ namespace ShaderEditor.Windows
                         break;
                 }
             }
+        }
+
+        private IReadOnlyList<IsfPassDefinition> GetRenderPasses()
+        {
+            var passes = _passes.Count == 0
+                ? new List<IsfPassDefinition>()
+                : _passes.ToList();
+
+            if (passes.Count == 0 || !string.IsNullOrWhiteSpace(passes[^1].Target))
+            {
+                passes.Add(new IsfPassDefinition());
+            }
+
+            return passes;
         }
 
         private void BindPassTextures()
@@ -260,6 +292,7 @@ namespace ShaderEditor.Windows
             }
         }
 
+
         private static int ResolveDimension(
             System.Text.Json.JsonElement? value,
             int defaultValue,
@@ -271,7 +304,7 @@ namespace ShaderEditor.Windows
             var element = value.Value;
             if (element.ValueKind == System.Text.Json.JsonValueKind.Number && element.TryGetDouble(out var number))
             {
-                return Math.Max(1, (int)Math.Round(number <= 1 ? defaultValue * number : number));
+                return Math.Max(1, (int)Math.Round(number < 1 ? defaultValue * number : number));
             }
 
             if (element.ValueKind == System.Text.Json.JsonValueKind.String)
@@ -313,6 +346,7 @@ namespace ShaderEditor.Windows
                 throw new InvalidOperationException("ISF-Pass-Framebuffer konnte nicht erstellt werden.");
             }
 
+            //GL.BindFramebuffer(FramebufferTarget.Framebuffer, target.Framebuffer);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
