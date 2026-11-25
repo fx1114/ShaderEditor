@@ -95,8 +95,8 @@ namespace ShaderEditor.Windows
 
             if (_shaderProgram != 0) GL.DeleteProgram(_shaderProgram);
             _shaderProgram = newProgram;
-            //_passes = passes;
-            //DeletePassTargets();
+            _passes = passes;
+            DeletePassTargets();
 
             //ErrorLog.Text = "ISF-Shader erfolgreich kompiliert.";
             //return _shaderProgram;
@@ -107,7 +107,7 @@ namespace ShaderEditor.Windows
         {
             if (_shaderProgram == 0) return;
 
-            //EnsurePassTargets((int)width, (int)height);
+            EnsurePassTargets((int)width, (int)height);
 
             GL.GetQueryObject(_timerQuery, GetQueryObjectParam.QueryResultAvailable, out int resultAvailable);
             if (resultAvailable != 0)
@@ -115,13 +115,13 @@ namespace ShaderEditor.Windows
                 GL.GetQueryObject(_timerQuery, GetQueryObjectParam.QueryResult, out long elapsedNanoseconds);
                 LastGpuTimeMicroseconds = elapsedNanoseconds / 1000.0;
             }
-            /*
+            
             var passes = GetRenderPasses();
 
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 1);
             GL.Viewport(0, 0, (int)width, (int)height);
             GL.Clear(ClearBufferMask.ColorBufferBit);
-
+            
             for (var passIndex = 0; passIndex < passes.Count; passIndex++)
             {
                 var pass = passes[passIndex];
@@ -132,7 +132,7 @@ namespace ShaderEditor.Windows
                 var passWidth = target?.Width ?? (int)width;
                 var passHeight = target?.Height ?? (int)height;
 
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, target?.Framebuffer ?? 0);
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, target?.Framebuffer ?? 1);
                 if (target == null)
                 {
                     GL.DrawBuffer(DrawBufferMode.Back);
@@ -142,7 +142,7 @@ namespace ShaderEditor.Windows
                 {
                     GL.Clear(ClearBufferMask.ColorBufferBit);
                 }
-            */
+            
                 GL.UseProgram(_shaderProgram);
                 SetUniforms(delta, elapsed, frameIndex, 0, (int)width, (int)height, activeParameters);
 
@@ -150,7 +150,7 @@ namespace ShaderEditor.Windows
                 GL.BeginQuery(QueryTarget.TimeElapsed, _timerQuery);
                 GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
                 GL.EndQuery(QueryTarget.TimeElapsed);
-            /*
+            
                 SetUniforms(delta, elapsed, frameIndex, passIndex, passWidth, passHeight, activeParameters);
                 BindPassTextures();
 
@@ -160,27 +160,26 @@ namespace ShaderEditor.Windows
                 GL.EndQuery(QueryTarget.TimeElapsed);
             }
             
-
+            
             var lastPass = passes[^1];
             if (!string.IsNullOrWhiteSpace(lastPass.Target) &&
                 _passTargets.TryGetValue(lastPass.Target, out var lastTarget))
             {
                 GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, lastTarget.Framebuffer);
-                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, 0);
+                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, 1);
                 GL.BlitFramebuffer(
                     0, 0, lastTarget.Width, lastTarget.Height,
                     0, 0, (int)width, (int)height,
                     ClearBufferMask.ColorBufferBit,
                     BlitFramebufferFilter.Linear);
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 1);
             }
-            */
-            /*
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            
+            
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 1);
             GL.DrawBuffer(DrawBufferMode.Back);
             GL.Viewport(0, 0, (int)width, (int)height);
             GL.Flush();
-            */
         }
 
         private void SetUniforms(
@@ -225,6 +224,31 @@ namespace ShaderEditor.Windows
                     case ColorParameterVm value:
                         GL.Uniform4(location, value.R, value.G, value.B, value.A);
                         break;
+                }
+            }
+
+            foreach( var pass in _passes)
+            {
+                if (!string.IsNullOrWhiteSpace(pass.Target) &&
+                    _passTargets.TryGetValue(pass.Target, out var target))
+                {
+                    var sizeLocation = GL.GetUniformLocation(_shaderProgram, $"_{pass.Target}_imgSize");
+                    if (sizeLocation != -1)
+                    {
+                        GL.Uniform2(sizeLocation, target.Width, target.Height);
+                    }
+                    var rectLocation = GL.GetUniformLocation(_shaderProgram, $"_{pass.Target}_imgRect");
+                    if (rectLocation != -1)
+                    {
+                        //GL.Uniform4(rectLocation, 0f, 0f, target.Width, target.Height);
+                        GL.Uniform4(rectLocation, 0f, 0f, 1f, 1f);
+                    }
+                    var flipLocation = GL.GetUniformLocation(_shaderProgram, $"_{pass.Target}_flip");
+                    if (flipLocation != -1)
+                    {
+                        //GL.Uniform1(flipLocation, target.Persistent ? 1 : 0);
+                        GL.Uniform1(flipLocation, 1);
+                    }
                 }
             }
         }
@@ -324,6 +348,7 @@ namespace ShaderEditor.Windows
 
         private void CreatePassTarget(PassTarget target)
         {
+            // create OpenGL texture buffer
             target.Texture = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, target.Texture);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
@@ -333,11 +358,12 @@ namespace ShaderEditor.Windows
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, target.Width, target.Height, 0,
                 PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
 
+            // create OpenGL framebuffer and attach the texture
             target.Framebuffer = GL.GenFramebuffer();
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, target.Framebuffer);
             GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
                 TextureTarget.Texture2D, target.Texture, 0);
-            GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+            //GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
 
             if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
             {
@@ -347,7 +373,7 @@ namespace ShaderEditor.Windows
             }
 
             //GL.BindFramebuffer(FramebufferTarget.Framebuffer, target.Framebuffer);
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            //GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
         private void DeletePassTargets()

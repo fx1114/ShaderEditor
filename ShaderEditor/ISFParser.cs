@@ -60,6 +60,12 @@ namespace ShaderEditor.Isf
             sb.AppendLine("uniform vec4 DATE;");
             sb.AppendLine("uniform vec2 RENDERSIZE;");
             sb.AppendLine("#define isf_FragNormCoord (gl_FragCoord.xy / RENDERSIZE.xy)");
+            sb.AppendLine("#define IMG_PIXEL(inputImage, pixelCoord) (texture((inputImage), (pixelCoord) / vec2(textureSize((inputImage), 0))))");
+
+
+            sb.AppendLine("#define IMG_NORM_PIXEL(inputImage, normCoord) (texture((inputImage), (normCoord)))");
+            sb.AppendLine("#define IMG_THIS_PIXEL(inputImage) (IMG_PIXEL((inputImage), (gl_FragCoord.xy)))");
+            sb.AppendLine("#define IMG_THIS_NORM_PIXEL(inputImage) (IMG_NORM_PIXEL((inputImage), (isf_FragNormCoord)))");
             sb.AppendLine();
 
             vertexHeader.AppendLine("#version 330 core");
@@ -165,6 +171,9 @@ namespace ShaderEditor.Isf
                     }
 
                     sb.AppendLine($"uniform sampler2D {pass.Target};");
+                    sb.AppendLine($"uniform vec2 _{pass.Target}_imgSize;");
+                    sb.AppendLine($"uniform vec4 _{pass.Target}_imgRect;");
+                    sb.AppendLine($"uniform bool _{pass.Target}_flip;");
                     vertexHeader.AppendLine($"uniform sampler2D {pass.Target};");
                 }
             }
