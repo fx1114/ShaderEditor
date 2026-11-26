@@ -230,7 +230,10 @@ namespace ShaderEditor.Windows
                     var sizeLocation = GL.GetUniformLocation(_shaderProgram, $"_{pass.Target}_imgSize");
                     if (sizeLocation != -1)
                     {
-                        GL.Uniform2(sizeLocation, target.Width, target.Height);
+                        GL.Uniform2(
+                            sizeLocation,
+                            (float)target.Width,
+                            (float)target.Height);
                     }
                     var rectLocation = GL.GetUniformLocation(_shaderProgram, $"_{pass.Target}_imgRect");
                     if (rectLocation != -1)
