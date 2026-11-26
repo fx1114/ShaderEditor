@@ -132,7 +132,7 @@ namespace ShaderEditor.Windows
                 var passWidth = target?.Width ?? (int)width;
                 var passHeight = target?.Height ?? (int)height;
 
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, target?.Framebuffer ?? 1);
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, target?.WriteFramebuffer ?? 1);
                 if (target == null)
                 {
                     GL.DrawBuffer(DrawBufferMode.Back);
@@ -144,13 +144,6 @@ namespace ShaderEditor.Windows
                 }
             
                 GL.UseProgram(_shaderProgram);
-                SetUniforms(delta, elapsed, frameIndex, 0, (int)width, (int)height, activeParameters);
-
-                GL.BindVertexArray(_vao);
-                GL.BeginQuery(QueryTarget.TimeElapsed, _timerQuery);
-                GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
-                GL.EndQuery(QueryTarget.TimeElapsed);
-            
                 SetUniforms(delta, elapsed, frameIndex, passIndex, passWidth, passHeight, activeParameters);
                 BindPassTextures();
 
@@ -158,6 +151,8 @@ namespace ShaderEditor.Windows
                 GL.BeginQuery(QueryTarget.TimeElapsed, _timerQuery);
                 GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
                 GL.EndQuery(QueryTarget.TimeElapsed);
+
+                target?.Swap();
             }
             
             
@@ -165,7 +160,7 @@ namespace ShaderEditor.Windows
             if (!string.IsNullOrWhiteSpace(lastPass.Target) &&
                 _passTargets.TryGetValue(lastPass.Target, out var lastTarget))
             {
-                GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, lastTarget.Framebuffer);
+                GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, lastTarget.ReadFramebuffer);
                 GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, 1);
                 GL.BlitFramebuffer(
                     0, 0, lastTarget.Width, lastTarget.Height,
@@ -275,7 +270,7 @@ namespace ShaderEditor.Windows
                 if (textureUnit >= 16) break;
 
                 GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
-                GL.BindTexture(TextureTarget.Texture2D, target.Value.Texture);
+                    GL.BindTexture(TextureTarget.Texture2D, target.Value.ReadTexture);
                 var location = GL.GetUniformLocation(_shaderProgram, target.Key);
                 if (location != -1)
                 {
@@ -310,7 +305,8 @@ namespace ShaderEditor.Windows
                 var target = new PassTarget(
                     ResolveDimension(pass.Width, renderWidth, renderWidth, renderHeight),
                     ResolveDimension(pass.Height, renderHeight, renderWidth, renderHeight),
-                    pass.Persistent);
+                    pass.Persistent,
+                    pass.Float);
                 CreatePassTarget(target);
                 _passTargets.Add(pass.Target!, target);
             }
@@ -349,31 +345,42 @@ namespace ShaderEditor.Windows
         private void CreatePassTarget(PassTarget target)
         {
             // create OpenGL texture buffer
-            target.Texture = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, target.Texture);
+            target.ReadTexture = CreatePassTexture(target);
+            target.WriteTexture = CreatePassTexture(target);
+
+            target.ReadFramebuffer = CreatePassFramebuffer(target.ReadTexture);
+            target.WriteFramebuffer = CreatePassFramebuffer(target.WriteTexture);
+        }
+
+        private static int CreatePassTexture(PassTarget target)
+        {
+            var texture = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, texture);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, target.Width, target.Height, 0,
-                PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
+            var internalFormat = target.Float ? PixelInternalFormat.Rgba16f : PixelInternalFormat.Rgba8;
+            var pixelType = target.Float ? PixelType.HalfFloat : PixelType.UnsignedByte;
+            GL.TexImage2D(TextureTarget.Texture2D, 0, internalFormat, target.Width, target.Height, 0,
+                PixelFormat.Rgba, pixelType, IntPtr.Zero);
+            return texture;
+        }
 
-            // create OpenGL framebuffer and attach the texture
-            target.Framebuffer = GL.GenFramebuffer();
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, target.Framebuffer);
+        private static int CreatePassFramebuffer(int texture)
+        {
+            var framebuffer = GL.GenFramebuffer();
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
             GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
-                TextureTarget.Texture2D, target.Texture, 0);
-            //GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+                TextureTarget.Texture2D, texture, 0);
 
             if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
             {
-                DeletePassTarget(target);
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                GL.DeleteFramebuffer(framebuffer);
                 throw new InvalidOperationException("ISF-Pass-Framebuffer konnte nicht erstellt werden.");
             }
 
-            //GL.BindFramebuffer(FramebufferTarget.Framebuffer, target.Framebuffer);
-            //GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            return framebuffer;
         }
 
         private void DeletePassTargets()
@@ -388,26 +395,40 @@ namespace ShaderEditor.Windows
 
         private static void DeletePassTarget(PassTarget target)
         {
-            if (target.Framebuffer != 0) GL.DeleteFramebuffer(target.Framebuffer);
-            if (target.Texture != 0) GL.DeleteTexture(target.Texture);
-            target.Framebuffer = 0;
-            target.Texture = 0;
+            if (target.ReadFramebuffer != 0) GL.DeleteFramebuffer(target.ReadFramebuffer);
+            if (target.WriteFramebuffer != 0) GL.DeleteFramebuffer(target.WriteFramebuffer);
+            if (target.ReadTexture != 0) GL.DeleteTexture(target.ReadTexture);
+            if (target.WriteTexture != 0) GL.DeleteTexture(target.WriteTexture);
+            target.ReadFramebuffer = 0;
+            target.WriteFramebuffer = 0;
+            target.ReadTexture = 0;
+            target.WriteTexture = 0;
         }
 
         private sealed class PassTarget
         {
-            public PassTarget(int width, int height, bool persistent)
+            public PassTarget(int width, int height, bool persistent, bool isFloat)
             {
                 Width = width;
                 Height = height;
                 Persistent = persistent;
+                Float = isFloat;
             }
 
             public int Width { get; }
             public int Height { get; }
             public bool Persistent { get; }
-            public int Texture { get; set; }
-            public int Framebuffer { get; set; }
+            public bool Float { get; }
+            public int ReadTexture { get; set; }
+            public int WriteTexture { get; set; }
+            public int ReadFramebuffer { get; set; }
+            public int WriteFramebuffer { get; set; }
+
+            public void Swap()
+            {
+                (ReadTexture, WriteTexture) = (WriteTexture, ReadTexture);
+                (ReadFramebuffer, WriteFramebuffer) = (WriteFramebuffer, ReadFramebuffer);
+            }
         }
     }
 }

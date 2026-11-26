@@ -33,6 +33,9 @@ using System.Text.Json.Serialization;
         [JsonPropertyName("PERSISTENT")]
         public bool Persistent { get; set; }
 
+        [JsonPropertyName("FLOAT")]
+        public bool Float { get; set; }
+
         [JsonPropertyName("WIDTH")]
         public JsonElement? Width { get; set; }
 
