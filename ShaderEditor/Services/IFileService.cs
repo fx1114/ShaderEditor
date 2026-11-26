@@ -7,4 +7,5 @@ public interface IFileService
     string? SaveShader(string? currentPath);
     string ReadAllText(string path);
     void WriteAllText(string path, string content);
+    void DeleteFile(string path);
 }

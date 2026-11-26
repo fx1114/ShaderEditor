@@ -96,6 +96,7 @@ void main() {
 
         NewCommand = new RelayCommand(_ => NewShader());
         OpenCommand = new RelayCommand(_ => OpenShader());
+        DeleteShaderCommand = new RelayCommand(parameter => DeleteShader(parameter as ShaderFileItem));
         SetDefaultCommand = new RelayCommand(parameter => SetParameterDefault(parameter as IsfParameterViewModel));
         RemoveParameterCommand = new RelayCommand(parameter => RemoveParameter(parameter as IsfParameterViewModel));
         NewParameterCommand = new RelayCommand(_ => AddParameter());
@@ -197,6 +198,7 @@ void main() {
     public IShaderRenderer Renderer => _renderer;
     public ICommand NewCommand { get; }
     public ICommand OpenCommand { get; }
+    public ICommand DeleteShaderCommand { get; }
     public ICommand SetDefaultCommand { get; }
     public ICommand RemoveParameterCommand { get; }
     public ICommand NewParameterCommand { get; }
@@ -217,6 +219,51 @@ void main() {
                 return;
             }
 
+            RefreshShaderFiles();
+        }
+    }
+
+    private void DeleteShader(ShaderFileItem? shader)
+    {
+        if (shader == null || !File.Exists(shader.FilePath))
+        {
+            RefreshShaderFiles();
+            return;
+        }
+
+        var vertexPath = Path.ChangeExtension(shader.FilePath, ".vs");
+        var hasVertexShader = File.Exists(vertexPath);
+        var message = hasVertexShader
+            ? $"Soll '{shader.FileName}' einschließlich der zugehörigen .vs-Datei wirklich gelöscht werden?"
+            : $"Soll '{shader.FileName}' wirklich gelöscht werden?";
+
+        if (!_messageService.ConfirmDelete(message))
+        {
+            return;
+        }
+
+        try
+        {
+            _fileService.DeleteFile(shader.FilePath);
+            if (hasVertexShader)
+            {
+                _fileService.DeleteFile(vertexPath);
+            }
+
+            if (string.Equals(_currentFilePath, shader.FilePath, StringComparison.OrdinalIgnoreCase))
+            {
+                _currentFilePath = null;
+                SelectedShader = null;
+                CreateVertexShader = false;
+                SetInitialText(SampleIsfShader, DefaultVertexShaderSource);
+                ReloadShader(EditorText);
+            }
+
+            RefreshShaderFiles();
+        }
+        catch (Exception ex)
+        {
+            _messageService.ShowError($"Fehler beim Löschen der Datei:\n{ex.Message}", "Fehler");
             RefreshShaderFiles();
         }
     }

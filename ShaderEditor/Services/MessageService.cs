@@ -16,6 +16,13 @@ public sealed class MessageService : IMessageService
             _ => ConfirmResult.Cancel
         };
 
+    public bool ConfirmDelete(string message)
+        => MessageBox.Show(
+            message,
+            "Datei löschen",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning) == MessageBoxResult.Yes;
+
     public void ShowError(string message, string title)
         => MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
 }
