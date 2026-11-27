@@ -67,7 +67,7 @@ public sealed class GpuTimeGraph : FrameworkElement
             12,
             lineBrush,
             1.0);
-        drawingContext.DrawText(label, new Point(6, 4));
+        drawingContext.DrawText(label, new Point(6, this.ActualHeight - 30));
     }
 
     protected override Size MeasureOverride(Size availableSize)
