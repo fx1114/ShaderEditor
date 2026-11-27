@@ -530,7 +530,7 @@ void main() {
                 ? _fileService.ReadAllText(vertexPath)
                 : DefaultVertexShaderSource;
             SetInitialText(_fileService.ReadAllText(path), vertexSource);
-            ReloadShader(EditorText);
+            ReloadShader(EditorText, _renderer, resetParametersToDefaults: true);
             return true;
         }
         catch (Exception ex)
@@ -644,7 +644,10 @@ void main() {
     private void ReloadShader(string rawSource)
         => ReloadShader(rawSource, _renderer);
 
-    private void ReloadShader(string rawSource, IShaderRenderer renderer)
+    private void ReloadShader(
+        string rawSource,
+        IShaderRenderer renderer,
+        bool resetParametersToDefaults = false)
     {
         var hiddenParameters = _hiddenParameters.ToArray();
         var parseResult = IsfParser.ParseAndTranspile(
@@ -655,29 +658,32 @@ void main() {
             return;
         }
 
-        foreach (var newParameter in parseResult.Parameters)
+        if (!resetParametersToDefaults)
         {
-            var existing = Parameters.FirstOrDefault(parameter =>
-                parameter.Name == newParameter.Name && parameter.GetType() == newParameter.GetType());
-
-            switch (existing, newParameter)
+            foreach (var newParameter in parseResult.Parameters)
             {
-                case (FloatParameterVm oldFloat, FloatParameterVm newFloat):
-                    newFloat.Value = Math.Clamp(oldFloat.Value, newFloat.Min, newFloat.Max);
-                    break;
-                case (BoolParameterVm oldBool, BoolParameterVm newBool):
-                    newBool.Value = oldBool.Value;
-                    break;
-                case (Point2DParameterVm oldPoint, Point2DParameterVm newPoint):
-                    newPoint.X = Math.Clamp(oldPoint.X, newPoint.MinX, newPoint.MaxX);
-                    newPoint.Y = Math.Clamp(oldPoint.Y, newPoint.MinY, newPoint.MaxY);
-                    break;
-                case (ColorParameterVm oldColor, ColorParameterVm newColor):
-                    newColor.R = Math.Clamp(oldColor.R, newColor.MinR, newColor.MaxR);
-                    newColor.G = Math.Clamp(oldColor.G, newColor.MinG, newColor.MaxG);
-                    newColor.B = Math.Clamp(oldColor.B, newColor.MinB, newColor.MaxB);
-                    newColor.A = Math.Clamp(oldColor.A, newColor.MinA, newColor.MaxA);
-                    break;
+                var existing = Parameters.FirstOrDefault(parameter =>
+                    parameter.Name == newParameter.Name && parameter.GetType() == newParameter.GetType());
+
+                switch (existing, newParameter)
+                {
+                    case (FloatParameterVm oldFloat, FloatParameterVm newFloat):
+                        newFloat.Value = Math.Clamp(oldFloat.Value, newFloat.Min, newFloat.Max);
+                        break;
+                    case (BoolParameterVm oldBool, BoolParameterVm newBool):
+                        newBool.Value = oldBool.Value;
+                        break;
+                    case (Point2DParameterVm oldPoint, Point2DParameterVm newPoint):
+                        newPoint.X = Math.Clamp(oldPoint.X, newPoint.MinX, newPoint.MaxX);
+                        newPoint.Y = Math.Clamp(oldPoint.Y, newPoint.MinY, newPoint.MaxY);
+                        break;
+                    case (ColorParameterVm oldColor, ColorParameterVm newColor):
+                        newColor.R = Math.Clamp(oldColor.R, newColor.MinR, newColor.MaxR);
+                        newColor.G = Math.Clamp(oldColor.G, newColor.MinG, newColor.MaxG);
+                        newColor.B = Math.Clamp(oldColor.B, newColor.MinB, newColor.MaxB);
+                        newColor.A = Math.Clamp(oldColor.A, newColor.MinA, newColor.MaxA);
+                        break;
+                }
             }
         }
 
@@ -946,7 +952,7 @@ void main() {
         SelectedShader = null;
         CreateVertexShader = false;
         SetInitialText(SampleIsfShader, DefaultVertexShaderSource);
-        ReloadShader(EditorText);
+        ReloadShader(EditorText, _renderer, resetParametersToDefaults: true);
     }
 
     private void OpenShader()
@@ -964,7 +970,7 @@ void main() {
                 ? _fileService.ReadAllText(vertexPath)
                 : DefaultVertexShaderSource;
             SetInitialText(_fileService.ReadAllText(path), vertexSource);
-            ReloadShader(EditorText);
+            ReloadShader(EditorText, _renderer, resetParametersToDefaults: true);
         }
         catch (Exception ex)
         {
