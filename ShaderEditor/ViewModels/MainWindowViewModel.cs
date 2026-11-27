@@ -60,6 +60,7 @@ void main() {
     private readonly Stopwatch _stopwatch = new();
     private string? _currentFilePath;
     private string? _shaderFolderPath;
+    private FavoriteFolderItem? _selectedFavoriteFolder;
     private ShaderFileItem? _selectedShader;
     private string _editorText = string.Empty;
     private string _vertexEditorText = string.Empty;
@@ -92,6 +93,7 @@ void main() {
         _renderer = renderer;
         Parameters = new ObservableCollection<IsfParameterViewModel>();
         ShaderFiles = new ObservableCollection<ShaderFileItem>();
+        FavoriteFolders = new ObservableCollection<FavoriteFolderItem>();
         GpuRenderTimes = new ObservableCollection<double>();
 
         NewCommand = new RelayCommand(_ => NewShader());
@@ -101,6 +103,8 @@ void main() {
         RemoveParameterCommand = new RelayCommand(parameter => RemoveParameter(parameter as IsfParameterViewModel));
         NewParameterCommand = new RelayCommand(_ => AddParameter());
         SelectFolderCommand = new RelayCommand(_ => SelectShaderFolder());
+        AddFavoriteFolderCommand = new RelayCommand(_ => AddFavoriteFolder());
+        RemoveFavoriteFolderCommand = new RelayCommand(parameter => RemoveFavoriteFolder(parameter as FavoriteFolderItem));
         SaveCommand = new RelayCommand(_ => SaveShader());
         SaveAsCommand = new RelayCommand(_ => SaveShaderAs());
         ExitCommand = new RelayCommand(_ => _windowService.CloseApplication());
@@ -194,6 +198,7 @@ void main() {
 
     public ObservableCollection<IsfParameterViewModel> Parameters { get; }
     public ObservableCollection<ShaderFileItem> ShaderFiles { get; }
+    public ObservableCollection<FavoriteFolderItem> FavoriteFolders { get; }
     public ObservableCollection<double> GpuRenderTimes { get; }
     public IShaderRenderer Renderer => _renderer;
     public ICommand NewCommand { get; }
@@ -203,6 +208,8 @@ void main() {
     public ICommand RemoveParameterCommand { get; }
     public ICommand NewParameterCommand { get; }
     public ICommand SelectFolderCommand { get; }
+    public ICommand AddFavoriteFolderCommand { get; }
+    public ICommand RemoveFavoriteFolderCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand SaveAsCommand { get; }
     public ICommand ExitCommand { get; }
@@ -220,6 +227,21 @@ void main() {
             }
 
             RefreshShaderFiles();
+        }
+    }
+
+    public FavoriteFolderItem? SelectedFavoriteFolder
+    {
+        get => _selectedFavoriteFolder;
+        set
+        {
+            if (!SetProperty(ref _selectedFavoriteFolder, value) || value == null)
+            {
+                return;
+            }
+
+            ShaderFolderPath = value.FolderPath;
+            SaveSettings();
         }
     }
 
@@ -266,6 +288,36 @@ void main() {
             _messageService.ShowError($"Fehler beim Löschen der Datei:\n{ex.Message}", "Fehler");
             RefreshShaderFiles();
         }
+    }
+
+    private void AddFavoriteFolder()
+    {
+        var path = _fileService.SelectFolder();
+        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path) ||
+            FavoriteFolders.Any(favorite => string.Equals(favorite.FolderPath, path, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        var favorite = new FavoriteFolderItem(path);
+        FavoriteFolders.Add(favorite);
+        SelectedFavoriteFolder = favorite;
+        SaveSettings();
+    }
+
+    private void RemoveFavoriteFolder(FavoriteFolderItem? favorite)
+    {
+        if (favorite == null || !FavoriteFolders.Remove(favorite))
+        {
+            return;
+        }
+
+        if (ReferenceEquals(SelectedFavoriteFolder, favorite))
+        {
+            SelectedFavoriteFolder = null;
+        }
+
+        SaveSettings();
     }
 
     public ShaderFileItem? SelectedShader
@@ -327,6 +379,15 @@ void main() {
 
             var settings = JsonSerializer.Deserialize<UserSettings>(
                 File.ReadAllText(SettingsFilePath));
+            foreach (var path in settings?.FavoriteFolderPaths ?? Enumerable.Empty<string>())
+            {
+                if (Directory.Exists(path) &&
+                    FavoriteFolders.All(favorite => !string.Equals(favorite.FolderPath, path, StringComparison.OrdinalIgnoreCase)))
+                {
+                    FavoriteFolders.Add(new FavoriteFolderItem(path));
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(settings?.ShaderFolderPath) &&
                 Directory.Exists(settings.ShaderFolderPath))
             {
@@ -344,7 +405,11 @@ void main() {
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(SettingsFilePath)!);
-            var settings = new UserSettings { ShaderFolderPath = ShaderFolderPath };
+            var settings = new UserSettings
+            {
+                ShaderFolderPath = ShaderFolderPath,
+                FavoriteFolderPaths = FavoriteFolders.Select(favorite => favorite.FolderPath).ToList()
+            };
             File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(settings));
         }
         catch
@@ -907,6 +972,23 @@ void main() {
 file sealed class UserSettings
 {
     public string? ShaderFolderPath { get; set; }
+    public List<string> FavoriteFolderPaths { get; set; } = new();
+}
+
+public sealed class FavoriteFolderItem
+{
+    public FavoriteFolderItem(string folderPath)
+    {
+        FolderPath = folderPath;
+        FolderName = Path.GetFileName(folderPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (string.IsNullOrWhiteSpace(FolderName))
+        {
+            FolderName = folderPath;
+        }
+    }
+
+    public string FolderPath { get; }
+    public string FolderName { get; }
 }
 
 public sealed class ShaderFileItem

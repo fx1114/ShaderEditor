@@ -139,6 +139,40 @@
             <!-- Shader-Explorer -->
             <Border Grid.Column="0" Background="#252526" Padding="8">
                 <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Content="+" Width="24" Height="24"
+                                Padding="0" Background="#3A3A3D" Foreground="#D4D4D4"
+                                BorderBrush="#555555" ToolTip="Favorite-Ordner hinzufügen"
+                                Command="{Binding AddFavoriteFolderCommand}" />
+                        <TextBlock Text="FAVORITES" FontSize="12" FontWeight="Bold"
+                                   Foreground="#888888" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ListBox DockPanel.Dock="Top" ItemsSource="{Binding FavoriteFolders}"
+                             SelectedItem="{Binding SelectedFavoriteFolder, Mode=TwoWay}"
+                             MaxHeight="130" Margin="0,0,0,10"
+                             Background="#252526" Foreground="#D4D4D4" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             HorizontalContentAlignment="Stretch">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel ToolTip="{Binding FolderPath}">
+                                    <Button DockPanel.Dock="Right" Content="×" Width="24" Height="24"
+                                            Padding="0" Margin="4,0,0,0"
+                                            Background="#3A3A3D" Foreground="#D4D4D4"
+                                            BorderBrush="#555555" ToolTip="Favorite entfernen"
+                                            Command="{Binding DataContext.RemoveFavoriteFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                    <TextBlock Text="{Binding FolderName}" Padding="4,5" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                     <TextBlock DockPanel.Dock="Top" Text="SHADER" FontSize="12" FontWeight="Bold"
                                Foreground="#888888" Margin="0,0,0,8" />
                     <ListBox ItemsSource="{Binding ShaderFiles}" SelectedItem="{Binding SelectedShader, Mode=TwoWay}"
