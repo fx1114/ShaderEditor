@@ -92,13 +92,20 @@ namespace ShaderEditor.Isf
                         case "float":
                             sb.AppendLine($"uniform float {input.Name};");
                             vertexHeader.AppendLine($"uniform float {input.Name};");
+                            var minFloat = GetFloat(input.Min, 0.0f);
+                            var maxFloat = GetFloat(input.Max, 1.0f);
+                            if (minFloat > maxFloat)
+                            {
+                                return CreateRangeError(input, "Wert", minFloat, maxFloat);
+                            }
+
                             parameters.Add(new FloatParameterVm
                             {
                                 Name = input.Name,
                                 DisplayLabel = label,
                                 Value = GetFloat(input.Default, 0.5f),
-                                Min = GetFloat(input.Min, 0.0f),
-                                Max = GetFloat(input.Max, 1.0f)
+                                Min = minFloat,
+                                Max = maxFloat
                             });
                             break;
 
@@ -120,6 +127,12 @@ namespace ShaderEditor.Isf
                             var defPt = GetFloatArray(input.Default, new[] { 0.5f, 0.5f });
                             var minPt = GetFloatArray(input.Min, new[] { 0.0f, 0.0f });
                             var maxPt = GetFloatArray(input.Max, new[] { 1.0f, 1.0f });
+                            var pointRangeError = ValidateRanges(input, minPt, maxPt, new[] { "X", "Y" });
+                            if (pointRangeError != null)
+                            {
+                                return pointRangeError;
+                            }
+
                             parameters.Add(new Point2DParameterVm
                             {
                                 Name = input.Name,
@@ -139,6 +152,12 @@ namespace ShaderEditor.Isf
                             var defCol = GetFloatArray(input.Default, new[] { 1f, 1f, 1f, 1f });
                             var minCol = GetFloatArray(input.Min, new[] { 0f, 0f, 0f, 0f });
                             var maxCol = GetFloatArray(input.Max, new[] { 1f, 1f, 1f, 1f });
+                            var colorRangeError = ValidateRanges(input, minCol, maxCol, new[] { "R", "G", "B", "A" });
+                            if (colorRangeError != null)
+                            {
+                                return colorRangeError;
+                            }
+
                             parameters.Add(new ColorParameterVm
                             {
                                 Name = input.Name,
@@ -208,5 +227,31 @@ namespace ShaderEditor.Isf
 
         private static float GetArrayValue(float[] values, int index, float fallback)
             => index < values.Length ? values[index] : fallback;
+
+        private static IsfParseResult CreateRangeError(IsfInputDefinition input, string component, float min, float max)
+            => new()
+            {
+                Error = $"Ungültiger Wertebereich für ISF-Parameter '{input.Name}' ({component}): " +
+                        $"MIN ({min}) darf nicht größer als MAX ({max}) sein."
+            };
+
+        private static IsfParseResult? ValidateRanges(
+            IsfInputDefinition input,
+            float[] minValues,
+            float[] maxValues,
+            string[] components)
+        {
+            for (var index = 0; index < components.Length; index++)
+            {
+                var min = GetArrayValue(minValues, index, 0f);
+                var max = GetArrayValue(maxValues, index, 1f);
+                if (min > max)
+                {
+                    return CreateRangeError(input, components[index], min, max);
+                }
+            }
+
+            return null;
+        }
     }
 }
