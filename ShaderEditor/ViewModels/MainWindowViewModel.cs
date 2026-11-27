@@ -61,6 +61,8 @@ void main() {
     private string? _currentFilePath;
     private string? _shaderFolderPath;
     private FavoriteFolderItem? _selectedFavoriteFolder;
+    private string? _copiedShaderPath;
+    private string? _copiedVertexShaderPath;
     private ShaderFileItem? _selectedShader;
     private string _editorText = string.Empty;
     private string _vertexEditorText = string.Empty;
@@ -99,6 +101,8 @@ void main() {
         NewCommand = new RelayCommand(_ => NewShader());
         OpenCommand = new RelayCommand(_ => OpenShader());
         DeleteShaderCommand = new RelayCommand(parameter => DeleteShader(parameter as ShaderFileItem));
+        CopyShaderCommand = new RelayCommand(parameter => CopyShader(parameter as ShaderFileItem));
+        PasteShaderCommand = new RelayCommand(parameter => PasteShader(parameter as FavoriteFolderItem));
         SetDefaultCommand = new RelayCommand(parameter => SetParameterDefault(parameter as IsfParameterViewModel));
         RemoveParameterCommand = new RelayCommand(parameter => RemoveParameter(parameter as IsfParameterViewModel));
         NewParameterCommand = new RelayCommand(_ => AddParameter());
@@ -204,6 +208,8 @@ void main() {
     public ICommand NewCommand { get; }
     public ICommand OpenCommand { get; }
     public ICommand DeleteShaderCommand { get; }
+    public ICommand CopyShaderCommand { get; }
+    public ICommand PasteShaderCommand { get; }
     public ICommand SetDefaultCommand { get; }
     public ICommand RemoveParameterCommand { get; }
     public ICommand NewParameterCommand { get; }
@@ -227,6 +233,63 @@ void main() {
             }
 
             RefreshShaderFiles();
+        }
+    }
+
+    private void CopyShader(ShaderFileItem? shader)
+    {
+        if (shader == null || !File.Exists(shader.FilePath))
+        {
+            return;
+        }
+
+        _copiedShaderPath = shader.FilePath;
+        var vertexPath = Path.ChangeExtension(shader.FilePath, ".vs");
+        _copiedVertexShaderPath = File.Exists(vertexPath) ? vertexPath : null;
+        ErrorLog = _copiedVertexShaderPath == null
+            ? $"Shader zum Einfügen vorgemerkt: {shader.FileName}"
+            : $"Shader einschließlich Vertex-Shader zum Einfügen vorgemerkt: {shader.FileName}";
+    }
+
+    private void PasteShader(FavoriteFolderItem? favorite)
+    {
+        if (favorite == null || string.IsNullOrWhiteSpace(_copiedShaderPath) ||
+            !File.Exists(_copiedShaderPath) || !Directory.Exists(favorite.FolderPath))
+        {
+            return;
+        }
+
+        var targetShaderPath = Path.Combine(favorite.FolderPath, Path.GetFileName(_copiedShaderPath));
+        var targetVertexPath = _copiedVertexShaderPath == null
+            ? null
+            : Path.Combine(favorite.FolderPath, Path.GetFileName(_copiedVertexShaderPath));
+        var overwriteRequired = File.Exists(targetShaderPath) ||
+            (targetVertexPath != null && File.Exists(targetVertexPath));
+
+        if (overwriteRequired && !_messageService.ConfirmOverwrite(
+                $"Der Shader '{Path.GetFileName(targetShaderPath)}' ist im Favorite-Ordner bereits vorhanden. Soll er einschließlich der Vertex-Datei überschrieben werden?"))
+        {
+            return;
+        }
+
+        try
+        {
+            File.Copy(_copiedShaderPath, targetShaderPath, true);
+            if (_copiedVertexShaderPath != null && targetVertexPath != null)
+            {
+                File.Copy(_copiedVertexShaderPath, targetVertexPath, true);
+            }
+
+            if (string.Equals(ShaderFolderPath, favorite.FolderPath, StringComparison.OrdinalIgnoreCase))
+            {
+                RefreshShaderFiles();
+            }
+
+            ErrorLog = $"Shader eingefügt: {targetShaderPath}";
+        }
+        catch (Exception ex)
+        {
+            _messageService.ShowError($"Fehler beim Einfügen des Shaders:\n{ex.Message}", "Fehler");
         }
     }
 
