@@ -90,10 +90,26 @@
                     <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="{Binding DisplayLabel}" FontWeight="SemiBold" Margin="0,0,0,6" />
-                        <DockPanel><TextBlock Text="R:" Width="20" Foreground="#F48771"/><Slider Minimum="{Binding MinR}" Maximum="{Binding MaxR}" Value="{Binding R, Mode=TwoWay}"/></DockPanel>
-                        <DockPanel><TextBlock Text="G:" Width="20" Foreground="#89D185"/><Slider Minimum="{Binding MinG}" Maximum="{Binding MaxG}" Value="{Binding G, Mode=TwoWay}"/></DockPanel>
-                        <DockPanel><TextBlock Text="B:" Width="20" Foreground="#569CD6"/><Slider Minimum="{Binding MinB}" Maximum="{Binding MaxB}" Value="{Binding B, Mode=TwoWay}"/></DockPanel>
-                        <DockPanel><TextBlock Text="A:" Width="20" Foreground="#CCCCCC"/><Slider Minimum="{Binding MinA}" Maximum="{Binding MaxA}" Value="{Binding A, Mode=TwoWay}"/></DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="{Binding R, StringFormat={}{0:F3}}" Width="42" DockPanel.Dock="Right" TextAlignment="Right" />
+                            <TextBlock Text="R:" Width="20" Foreground="#F48771" />
+                            <Slider Minimum="{Binding MinR}" Maximum="{Binding MaxR}" Value="{Binding R, Mode=TwoWay}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="{Binding G, StringFormat={}{0:F3}}" Width="42" DockPanel.Dock="Right" TextAlignment="Right" />
+                            <TextBlock Text="G:" Width="20" Foreground="#89D185" />
+                            <Slider Minimum="{Binding MinG}" Maximum="{Binding MaxG}" Value="{Binding G, Mode=TwoWay}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="{Binding B, StringFormat={}{0:F3}}" Width="42" DockPanel.Dock="Right" TextAlignment="Right" />
+                            <TextBlock Text="B:" Width="20" Foreground="#569CD6" />
+                            <Slider Minimum="{Binding MinB}" Maximum="{Binding MaxB}" Value="{Binding B, Mode=TwoWay}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="{Binding A, StringFormat={}{0:F3}}" Width="42" DockPanel.Dock="Right" TextAlignment="Right" />
+                            <TextBlock Text="A:" Width="20" Foreground="#CCCCCC" />
+                            <Slider Minimum="{Binding MinA}" Maximum="{Binding MaxA}" Value="{Binding A, Mode=TwoWay}" />
+                        </DockPanel>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="8,0,0,0">
                         <Button Content="Reset" Command="{Binding DataContext.ResetParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" ToolTip="Auf den Shader-Default zurücksetzen" />
