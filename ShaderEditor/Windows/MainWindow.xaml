@@ -36,6 +36,7 @@
                     <Slider Minimum="{Binding Min}" Maximum="{Binding Max}" Value="{Binding Value, Mode=TwoWay}" Margin="0,4,8,0" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                    <Button Content="Reset" Command="{Binding DataContext.ResetParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" ToolTip="Auf den Shader-Default zurücksetzen" />
                     <Button Content="Default" Command="{Binding DataContext.SetDefaultCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" />
                     <Button Content="Entfernen" Command="{Binding DataContext.RemoveParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" />
                 </StackPanel>
@@ -48,6 +49,7 @@
                 <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <CheckBox Content="{Binding DisplayLabel}" IsChecked="{Binding Value, Mode=TwoWay}" Foreground="#D4D4D4" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                    <Button Content="Reset" Command="{Binding DataContext.ResetParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,3,0" ToolTip="Auf den Shader-Default zurücksetzen" />
                     <Button Content="Default" Command="{Binding DataContext.SetDefaultCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,3,0" />
                     <Button Content="Entfernen" Command="{Binding DataContext.RemoveParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" />
                 </StackPanel>
@@ -73,6 +75,7 @@
                         </DockPanel>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <Button Content="Reset" Command="{Binding DataContext.ResetParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" ToolTip="Auf den Shader-Default zurücksetzen" />
                         <Button Content="Default" Command="{Binding DataContext.SetDefaultCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" />
                         <Button Content="Entfernen" Command="{Binding DataContext.RemoveParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" />
                     </StackPanel>
@@ -93,6 +96,7 @@
                         <DockPanel><TextBlock Text="A:" Width="20" Foreground="#CCCCCC"/><Slider Minimum="{Binding MinA}" Maximum="{Binding MaxA}" Value="{Binding A, Mode=TwoWay}"/></DockPanel>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <Button Content="Reset" Command="{Binding DataContext.ResetParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" ToolTip="Auf den Shader-Default zurücksetzen" />
                         <Button Content="Default" Command="{Binding DataContext.SetDefaultCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" Margin="0,0,0,3" />
                         <Button Content="Entfernen" Command="{Binding DataContext.RemoveParameterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Padding="5,2" />
                     </StackPanel>

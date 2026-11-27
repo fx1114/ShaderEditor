@@ -104,6 +104,7 @@ void main() {
         CopyShaderCommand = new RelayCommand(parameter => CopyShader(parameter as ShaderFileItem));
         PasteShaderCommand = new RelayCommand(parameter => PasteShader(parameter as FavoriteFolderItem));
         SetDefaultCommand = new RelayCommand(parameter => SetParameterDefault(parameter as IsfParameterViewModel));
+        ResetParameterCommand = new RelayCommand(parameter => ResetParameterDefault(parameter as IsfParameterViewModel));
         RemoveParameterCommand = new RelayCommand(parameter => RemoveParameter(parameter as IsfParameterViewModel));
         NewParameterCommand = new RelayCommand(_ => AddParameter());
         SelectFolderCommand = new RelayCommand(_ => SelectShaderFolder());
@@ -211,6 +212,7 @@ void main() {
     public ICommand CopyShaderCommand { get; }
     public ICommand PasteShaderCommand { get; }
     public ICommand SetDefaultCommand { get; }
+    public ICommand ResetParameterCommand { get; }
     public ICommand RemoveParameterCommand { get; }
     public ICommand NewParameterCommand { get; }
     public ICommand SelectFolderCommand { get; }
@@ -729,6 +731,50 @@ void main() {
         }
 
         ErrorLog = $"Default-Wert übernommen: {parameter.DisplayLabel}";
+    }
+
+    private void ResetParameterDefault(IsfParameterViewModel? parameter)
+    {
+        if (parameter == null)
+        {
+            return;
+        }
+
+        var parseResult = IsfParser.ParseAndTranspile(EditorText);
+        if (parseResult.Error != null)
+        {
+            ErrorLog = parseResult.Error;
+            return;
+        }
+
+        var defaultParameter = parseResult.Parameters.FirstOrDefault(candidate =>
+            candidate.Name == parameter.Name && candidate.GetType() == parameter.GetType());
+        if (defaultParameter == null)
+        {
+            return;
+        }
+
+        switch (parameter, defaultParameter)
+        {
+            case (FloatParameterVm current, FloatParameterVm defaultValue):
+                current.Value = defaultValue.Value;
+                break;
+            case (BoolParameterVm current, BoolParameterVm defaultValue):
+                current.Value = defaultValue.Value;
+                break;
+            case (Point2DParameterVm current, Point2DParameterVm defaultValue):
+                current.X = defaultValue.X;
+                current.Y = defaultValue.Y;
+                break;
+            case (ColorParameterVm current, ColorParameterVm defaultValue):
+                current.R = defaultValue.R;
+                current.G = defaultValue.G;
+                current.B = defaultValue.B;
+                current.A = defaultValue.A;
+                break;
+        }
+
+        ErrorLog = $"Default-Wert wiederhergestellt: {parameter.DisplayLabel}";
     }
 
     private void RemoveParameter(IsfParameterViewModel? parameter)
