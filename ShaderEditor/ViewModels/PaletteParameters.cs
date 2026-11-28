@@ -6,7 +6,7 @@ public sealed class PaletteParameters
         double aR = 0.5, double aG = 0.5, double aB = 0.5,
         double bR = 0.5, double bG = 0.5, double bB = 0.5,
         double cR = 1.0, double cG = 1.0, double cB = 1.0,
-        double dR = 0.0, double dG = 0.0, double dB = 0.0)
+        double dR = 0.333, double dG = 0.666, double dB = 1.0)
     {
         AR = aR;
         AG = aG;
