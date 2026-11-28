@@ -23,6 +23,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <TextBlock Text="Parameter der cosine palette-Funktion" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14" />
         <TextBlock Grid.Row="1" Text="a" FontWeight="Bold" Margin="0,0,0,4" />
@@ -64,7 +65,10 @@
                 <TextBlock Grid.Row="1" Text="G" /><Slider Grid.Row="1" Grid.Column="1" Value="{Binding DG, Mode=TwoWay}" /><TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding DG, StringFormat={}{0:F3}}" HorizontalAlignment="Right" />
                 <TextBlock Grid.Row="2" Text="B" /><Slider Grid.Row="2" Grid.Column="1" Value="{Binding DB, Mode=TwoWay}" /><TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding DB, StringFormat={}{0:F3}}" HorizontalAlignment="Right" />
             </Grid>
-            <TextBlock Text="Die aktuellen Werte werden beim Schließen übernommen." Foreground="#9CDCFE" Margin="0,12,0,0" />
+    </StackPanel>
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Abbrechen" IsCancel="True" Padding="12,5" Margin="0,0,8,0" />
+            <Button Content="OK" IsDefault="True" Click="OkButton_Click" Padding="12,5" />
         </StackPanel>
     </Grid>
 </Window>

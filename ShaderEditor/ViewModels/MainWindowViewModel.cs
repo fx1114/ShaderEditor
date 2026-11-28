@@ -258,6 +258,11 @@ void main() {
     {
         var parameters = ReadPaletteParameters(EditorText);
         var updatedParameters = _windowService.ShowPaletteWindow(parameters);
+        if (updatedParameters is null)
+        {
+            return;
+        }
+
         var function = string.Format(
             System.Globalization.CultureInfo.InvariantCulture,
             PaletteFunction,

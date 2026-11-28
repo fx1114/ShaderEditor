@@ -37,15 +37,16 @@ public sealed class WindowService : IWindowService
         fullscreenWindow.WindowState = WindowState.Maximized;
     }
 
-    public PaletteParameters ShowPaletteWindow(PaletteParameters parameters)
+    public PaletteParameters? ShowPaletteWindow(PaletteParameters parameters)
     {
         var paletteWindow = new PaletteWindow(parameters)
         {
             Owner = _mainWindow
         };
 
-        paletteWindow.ShowDialog();
-        return paletteWindow.Parameters;
+        return paletteWindow.ShowDialog() == true
+            ? paletteWindow.Parameters
+            : null;
     }
 
     public void CloseApplication() => _mainWindow?.Close();

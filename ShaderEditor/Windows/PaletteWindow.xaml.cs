@@ -21,4 +21,9 @@ public partial class PaletteWindow : Window
             : parameters.Clone();
         DataContext = Parameters;
     }
+
+    private void OkButton_Click(object sender, RoutedEventArgs e)
+    {
+        DialogResult = true;
+    }
 }

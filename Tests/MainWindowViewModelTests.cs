@@ -183,7 +183,7 @@ public sealed class MainWindowViewModelTests
         {
         }
 
-        public PaletteParameters ShowPaletteWindow(PaletteParameters parameters)
+        public PaletteParameters? ShowPaletteWindow(PaletteParameters parameters)
         {
             PaletteParameters = parameters;
             return parameters;
