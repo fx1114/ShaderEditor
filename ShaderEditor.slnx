@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="ShaderEditor/ShaderEditor.csproj" />
+  <Project Path="Tests/Tests.csproj" Id="4e6a1965-8d46-4751-b2b6-575b147a412f" />
 </Solution>
