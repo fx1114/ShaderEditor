@@ -27,6 +27,20 @@ void main() {
     isf_vertShaderInit();
 }";
 
+    private const string PaletteFunction = @"vec3 palette(float t) {{
+    vec3 a = vec3({0}, {1}, {2});
+    vec3 b = vec3({3}, {4}, {5});
+    vec3 c = vec3({6}, {7}, {8});
+    vec3 d = vec3({9}, {10}, {11});
+    return a + b * cos(6.28318 * (c * t + d));
+}}";
+    private static readonly Regex PaletteFunctionRegex = new(
+        @"\bvec3\s+palette\s*\(\s*float\s+t\s*\)\s*\{.*?\}",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly Regex PaletteComponentRegex = new(
+        @"vec3\s+(?<name>[abcd])\s*=\s*vec3\s*\(\s*(?<x>-?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*(?<y>-?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*(?<z>-?(?:\d+(?:\.\d*)?|\.\d+))\s*\)",
+        RegexOptions.Compiled);
+
     private const string SampleIsfShader = @"/*{
     ""DESCRIPTION"": ""Interaktiver ISF Test-Shader"",
     ""CREDIT"": ""PsyFX"",
@@ -114,6 +128,7 @@ void main() {
         SaveAsCommand = new RelayCommand(_ => SaveShaderAs());
         ExitCommand = new RelayCommand(_ => _windowService.CloseApplication());
         FullscreenCommand = new RelayCommand(_ => _windowService.ShowFullscreen(this));
+        PaletteCommand = new RelayCommand(_ => EditPalette());
 
         _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
         _debounceTimer.Tick += DebounceTimer_Tick;
@@ -222,6 +237,7 @@ void main() {
     public ICommand SaveAsCommand { get; }
     public ICommand ExitCommand { get; }
     public ICommand FullscreenCommand { get; }
+    public ICommand PaletteCommand { get; }
     public TimeSpan Elapsed => _stopwatch.Elapsed;
 
     public string? ShaderFolderPath
@@ -236,6 +252,60 @@ void main() {
 
             RefreshShaderFiles();
         }
+    }
+
+    private void EditPalette()
+    {
+        var parameters = ReadPaletteParameters(EditorText);
+        var updatedParameters = _windowService.ShowPaletteWindow(parameters);
+        var function = string.Format(
+            System.Globalization.CultureInfo.InvariantCulture,
+            PaletteFunction,
+            updatedParameters.AR, updatedParameters.AG, updatedParameters.AB,
+            updatedParameters.BR, updatedParameters.BG, updatedParameters.BB,
+            updatedParameters.CR, updatedParameters.CG, updatedParameters.CB,
+            updatedParameters.DR, updatedParameters.DG, updatedParameters.DB);
+
+        var match = PaletteFunctionRegex.Match(EditorText);
+        EditorText = match.Success
+            ? EditorText[..match.Index] + function + EditorText[(match.Index + match.Length)..]
+            : InsertPaletteFunction(EditorText, function);
+    }
+
+    private static string InsertPaletteFunction(string shaderText, string function)
+    {
+        var mainMatch = Regex.Match(shaderText, @"\bvoid\s+main\s*\(", RegexOptions.Singleline);
+        return mainMatch.Success
+            ? shaderText.Insert(mainMatch.Index, function + Environment.NewLine + Environment.NewLine)
+            : shaderText + Environment.NewLine + Environment.NewLine + function + Environment.NewLine;
+    }
+
+    private static PaletteParameters ReadPaletteParameters(string shaderText)
+    {
+        var functionMatch = PaletteFunctionRegex.Match(shaderText);
+        if (!functionMatch.Success)
+        {
+            return new PaletteParameters();
+        }
+
+        var values = new Dictionary<string, double[]>(StringComparer.Ordinal);
+        foreach (Match component in PaletteComponentRegex.Matches(functionMatch.Value))
+        {
+            values[component.Groups["name"].Value] =
+            [
+                double.Parse(component.Groups["x"].Value, System.Globalization.CultureInfo.InvariantCulture),
+                double.Parse(component.Groups["y"].Value, System.Globalization.CultureInfo.InvariantCulture),
+                double.Parse(component.Groups["z"].Value, System.Globalization.CultureInfo.InvariantCulture)
+            ];
+        }
+
+        return values.Count == 4
+            ? new PaletteParameters(
+                values["a"][0], values["a"][1], values["a"][2],
+                values["b"][0], values["b"][1], values["b"][2],
+                values["c"][0], values["c"][1], values["c"][2],
+                values["d"][0], values["d"][1], values["d"][2])
+            : new PaletteParameters();
     }
 
     private void CopyShader(ShaderFileItem? shader)

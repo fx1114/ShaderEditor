@@ -61,6 +61,7 @@ public sealed class MainWindowViewModelTests
             viewModel.SaveAsCommand,
             viewModel.ExitCommand,
             viewModel.FullscreenCommand
+            ,viewModel.PaletteCommand
         };
 
         Assert.IsTrue(commands.All(command => command is not null));
@@ -90,6 +91,43 @@ public sealed class MainWindowViewModelTests
 
         Assert.AreSame(viewModel, windowService.LastFullscreenViewModel);
     }
+
+    [TestMethod]
+    public void PaletteCommand_InsertsDefaultPaletteFunction()
+    {
+        var windowService = new FakeWindowService();
+        using var viewModel = CreateViewModel(windowService: windowService);
+        viewModel.EditorText = "void main() { gl_FragColor = vec4(1.0); }";
+
+        viewModel.PaletteCommand.Execute(null);
+
+        StringAssert.Contains(viewModel.EditorText, "vec3 palette(float t)");
+        StringAssert.Contains(viewModel.EditorText, "vec3 a = vec3(0.5, 0.5, 0.5);");
+        Assert.AreEqual(0.5, windowService.PaletteParameters.AR);
+    }
+
+    [TestMethod]
+    public void PaletteCommand_ReadsExistingValuesAndReplacesFunction()
+    {
+        var windowService = new FakeWindowService();
+        using var viewModel = CreateViewModel(windowService: windowService);
+        viewModel.EditorText = "vec3 palette(float t) {\n" +
+            "vec3 a = vec3(0.1, 0.2, 0.3);\n" +
+            "vec3 b = vec3(0.4, 0.5, 0.6);\n" +
+            "vec3 c = vec3(0.7, 0.8, 0.9);\n" +
+            "vec3 d = vec3(0.0, 0.1, 0.2);\n" +
+            "return a + b * cos(6.28318 * (c * t + d));\n}";
+
+        viewModel.PaletteCommand.Execute(null);
+
+        Assert.AreEqual(0.1, windowService.PaletteParameters.AR);
+        Assert.AreEqual(0.6, windowService.PaletteParameters.BB);
+        Assert.AreEqual(0.9, windowService.PaletteParameters.CB);
+        Assert.AreEqual(1, CountOccurrences(viewModel.EditorText, "vec3 palette(float t)"));
+    }
+
+    private static int CountOccurrences(string text, string value)
+        => text.Split(value, StringSplitOptions.None).Length - 1;
 
     private static MainWindowViewModel CreateViewModel(
         IWindowService? windowService = null)
@@ -139,8 +177,16 @@ public sealed class MainWindowViewModelTests
 
         public MainWindowViewModel? LastFullscreenViewModel { get; private set; }
 
+        public PaletteParameters PaletteParameters { get; private set; } = new();
+
         public void ShowMainWindow(MainWindowViewModel viewModel)
         {
+        }
+
+        public PaletteParameters ShowPaletteWindow(PaletteParameters parameters)
+        {
+            PaletteParameters = parameters;
+            return parameters;
         }
 
         public void ShowFullscreen(MainWindowViewModel viewModel)

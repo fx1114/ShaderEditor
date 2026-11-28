@@ -1,0 +1,70 @@
+<Window x:Class="ShaderEditor.Windows.PaletteWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Palette-Funktion"
+        Width="460"
+        SizeToContent="Height"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="#1E1E1E"
+        Foreground="#D4D4D4">
+    <Window.Resources>
+        <Style TargetType="Slider">
+            <Setter Property="Minimum" Value="0" />
+            <Setter Property="Maximum" Value="1" />
+            <Setter Property="Margin" Value="0,2,8,2" />
+        </Style>
+    </Window.Resources>
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="Parameter der cosine palette-Funktion" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14" />
+        <TextBlock Grid.Row="1" Text="a" FontWeight="Bold" Margin="0,0,0,4" />
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition /><ColumnDefinition Width="52" /></Grid.ColumnDefinitions>
+            <TextBlock Text="R" VerticalAlignment="Center" />
+            <Slider Grid.Column="1" Value="{Binding AR, Mode=TwoWay}" />
+            <TextBlock Grid.Column="2" Text="{Binding AR, StringFormat={}{0:F3}}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Text="G" VerticalAlignment="Center" />
+            <Slider Grid.Row="1" Grid.Column="1" Value="{Binding AG, Mode=TwoWay}" />
+            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding AG, StringFormat={}{0:F3}}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Text="B" VerticalAlignment="Center" />
+            <Slider Grid.Row="2" Grid.Column="1" Value="{Binding AB, Mode=TwoWay}" />
+            <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding AB, StringFormat={}{0:F3}}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+        </Grid>
+        <TextBlock Grid.Row="3" Text="b" FontWeight="Bold" Margin="0,0,0,4" />
+        <Grid Grid.Row="4" Margin="0,0,0,10">
+            <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition /><ColumnDefinition Width="52" /></Grid.ColumnDefinitions>
+            <TextBlock Text="R" VerticalAlignment="Center" /><Slider Grid.Column="1" Value="{Binding BR, Mode=TwoWay}" /><TextBlock Grid.Column="2" Text="{Binding BR, StringFormat={}{0:F3}}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Text="G" VerticalAlignment="Center" /><Slider Grid.Row="1" Grid.Column="1" Value="{Binding BG, Mode=TwoWay}" /><TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding BG, StringFormat={}{0:F3}}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Text="B" VerticalAlignment="Center" /><Slider Grid.Row="2" Grid.Column="1" Value="{Binding BB, Mode=TwoWay}" /><TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding BB, StringFormat={}{0:F3}}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+        </Grid>
+        <StackPanel Grid.Row="5">
+            <TextBlock Text="c" FontWeight="Bold" Margin="0,0,0,4" />
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition /><ColumnDefinition Width="52" /></Grid.ColumnDefinitions>
+                <TextBlock Text="R" /><Slider Grid.Column="1" Value="{Binding CR, Mode=TwoWay}" /><TextBlock Grid.Column="2" Text="{Binding CR, StringFormat={}{0:F3}}" HorizontalAlignment="Right" />
+                <TextBlock Grid.Row="1" Text="G" /><Slider Grid.Row="1" Grid.Column="1" Value="{Binding CG, Mode=TwoWay}" /><TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding CG, StringFormat={}{0:F3}}" HorizontalAlignment="Right" />
+                <TextBlock Grid.Row="2" Text="B" /><Slider Grid.Row="2" Grid.Column="1" Value="{Binding CB, Mode=TwoWay}" /><TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding CB, StringFormat={}{0:F3}}" HorizontalAlignment="Right" />
+            </Grid>
+            <TextBlock Text="d" FontWeight="Bold" Margin="0,8,0,4" />
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition /><ColumnDefinition Width="52" /></Grid.ColumnDefinitions>
+                <TextBlock Text="R" /><Slider Grid.Column="1" Value="{Binding DR, Mode=TwoWay}" /><TextBlock Grid.Column="2" Text="{Binding DR, StringFormat={}{0:F3}}" HorizontalAlignment="Right" />
+                <TextBlock Grid.Row="1" Text="G" /><Slider Grid.Row="1" Grid.Column="1" Value="{Binding DG, Mode=TwoWay}" /><TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding DG, StringFormat={}{0:F3}}" HorizontalAlignment="Right" />
+                <TextBlock Grid.Row="2" Text="B" /><Slider Grid.Row="2" Grid.Column="1" Value="{Binding DB, Mode=TwoWay}" /><TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding DB, StringFormat={}{0:F3}}" HorizontalAlignment="Right" />
+            </Grid>
+            <TextBlock Text="Die aktuellen Werte werden beim Schließen übernommen." Foreground="#9CDCFE" Margin="0,12,0,0" />
+        </StackPanel>
+    </Grid>
+</Window>

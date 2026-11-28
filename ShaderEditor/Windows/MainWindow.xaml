@@ -126,7 +126,7 @@
         <DockPanel DockPanel.Dock="Top">
             <Button DockPanel.Dock="Right" Width="50" Background="#2D2D30" Foreground="#D4D4D4" FontWeight="Bold"
                     Content="X" Command="{Binding ExitCommand}"/>
-            <Menu DockPanel.Dock="Left" Background="#2D2D30" Foreground="#D4D4D4" BorderBrush="#3F3F46" BorderThickness="0,0,0,1" Padding="4,2" Width="50">
+            <Menu Background="#2D2D30" Foreground="#D4D4D4" BorderBrush="#3F3F46" BorderThickness="0,0,0,1" Padding="4,2">
                 <MenuItem Header="_Datei">
                     <MenuItem Header="_Neu" InputGestureText="Strg+N" Command="{Binding NewCommand}" Background="#2D2D30" Foreground="#D4D4D4" />
                     <MenuItem Header="_Öffnen..." InputGestureText="Strg+O" Command="{Binding OpenCommand}" Background="#2D2D30" Foreground="#D4D4D4" />
@@ -135,6 +135,9 @@
                     <MenuItem Header="Speichern _unter..." InputGestureText="Strg+Umschalt+S" Command="{Binding SaveAsCommand}" Background="#2D2D30" Foreground="#D4D4D4" />
                     <Separator Background="#3F3F46" />
                     <MenuItem Header="_Beenden" Command="{Binding ExitCommand}" Background="#2D2D30" Foreground="#D4D4D4" />
+                </MenuItem>
+                <MenuItem Header="_Snippets">
+                    <MenuItem Header="_Palette" Command="{Binding PaletteCommand}" Background="#2D2D30" Foreground="#D4D4D4" />
                 </MenuItem>
             </Menu>
             <Button DockPanel.Dock="Left" Width="50" Background="#2D2D30" Foreground="#D4D4D4" FontWeight="Bold"
